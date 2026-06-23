@@ -1,8 +1,7 @@
 # PokéLab — Deck Builder Pokémon TCG
 
 Application web premium, **card-first**, pour explorer les cartes Pokémon TCG et
-construire des decks. Interface française, dark mode / glassmorphism, inspirée de
-l'expérience LorcaHub avec une direction artistique « finance app / Apple dark glass ».
+construire des decks. Interface française, dark mode / glassmorphism, avec une direction artistique « finance app / Apple dark glass ».
 
 > État actuel : **Phase 1 / Lot 1 — Fondations + Card Explorer**.
 
