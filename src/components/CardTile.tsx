@@ -1,27 +1,31 @@
 import { useMemo, useState } from "react";
-import type { CardBrief, FoilStyle } from "../api/types";
-import { inferFoilFromName } from "../lib/foil";
+import type { CardBrief } from "../api/types";
+import { getFoilPresentation } from "../lib/foil";
 import { useFoilHover } from "../hooks/useFoilHover";
+import { FoilOverlay } from "./ui/FoilOverlay";
 import { Icon } from "./ui/Icon";
 import styles from "./CardTile.module.css";
 
 interface CardTileProps {
   card: CardBrief;
   onClick?: (card: CardBrief) => void;
-  enableEffects?: boolean;
-  /** Forcé si connu (modal). Sinon déduit du nom (grille). */
-  foilStyle?: FoilStyle;
 }
 
-export function CardTile({ card, onClick, enableEffects = true, foilStyle }: CardTileProps) {
+export function CardTile({ card, onClick }: CardTileProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
-  const { ref, onPointerMove, onPointerLeave } = useFoilHover<HTMLDivElement>(enableEffects);
 
-  const foil: FoilStyle = useMemo(
-    () => foilStyle ?? inferFoilFromName(card.displayName || card.name),
-    [foilStyle, card.displayName, card.name],
+  // Brief : pas de rareté/variants -> présentation déduite du nom.
+  const presentation = useMemo(
+    () => getFoilPresentation({ name: card.name, displayName: card.displayName }),
+    [card.name, card.displayName],
   );
+  const special = presentation.zone !== "none";
+
+  const { ref, onPointerMove, onPointerLeave } = useFoilHover<HTMLDivElement>({
+    tilt: true,
+    glare: special,
+  });
 
   const alias = card.searchAliases?.[0];
 
@@ -30,7 +34,7 @@ export function CardTile({ card, onClick, enableEffects = true, foilStyle }: Car
       <div className={styles.perspective}>
         <div
           ref={ref}
-          className={styles.frame}
+          className={[styles.frame, special ? styles.special : ""].filter(Boolean).join(" ")}
           onPointerMove={onPointerMove}
           onPointerLeave={onPointerLeave}
         >
@@ -58,17 +62,12 @@ export function CardTile({ card, onClick, enableEffects = true, foilStyle }: Car
             </div>
           )}
 
-          {/* Effets foil (uniquement cartes spéciales) */}
-          {foil !== "none" && loaded && !errored && (
-            <span
-              className={[
-                styles.foil,
-                foil === "reverse" ? styles.foilReverse : styles.foilHolo,
-              ].join(" ")}
-            />
+          {loaded && !errored && special && (
+            <>
+              <FoilOverlay zone={presentation.zone} style={presentation.style} />
+              <span className={styles.glare} />
+            </>
           )}
-          {/* Reflet qui suit le pointeur (toutes cartes) */}
-          {loaded && !errored && <span className={styles.glare} />}
         </div>
       </div>
 

@@ -8,7 +8,7 @@
  * - les IDs sont identiques entre langues -> recherche bilingue EN/FR par fusion.
  */
 
-import { resolveFoilStyle } from "../lib/foil";
+import { cardmarketSearchUrl, resolveFoilStyle } from "../lib/foil";
 import type {
   Ability,
   Attack,
@@ -17,6 +17,7 @@ import type {
   CardFilters,
   CardLang,
   CardPage,
+  CardPricing,
   CardProvider,
   CardQuery,
   CardRecord,
@@ -139,6 +140,21 @@ interface TcgdexCard {
   };
   variants_detailed?: { type?: string; size?: string }[];
   foil?: string | null;
+  pricing?: {
+    cardmarket?: TcgdexCmPricing;
+    tcgplayer?: Record<string, unknown> & { unit?: string };
+  };
+}
+
+interface TcgdexCmPricing {
+  unit?: string;
+  updated?: string;
+  avg?: number;
+  low?: number;
+  trend?: number;
+  avg7?: number;
+  avg30?: number;
+  "avg-holo"?: number | null;
 }
 
 async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
@@ -204,6 +220,27 @@ function mapAbilities(c: TcgdexCard): Ability[] | undefined {
 function mapWeakRes(list?: { type: string; value?: string }[]): WeakRes[] | undefined {
   if (!list?.length) return undefined;
   return list.map((w) => ({ type: w.type, value: w.value }));
+}
+
+function mapPricing(c: TcgdexCard, searchName: string): CardPricing[] | undefined {
+  const cm = c.pricing?.cardmarket;
+  if (!cm) return undefined;
+  const currency = cm.unit === "EUR" ? "EUR" : cm.unit === "USD" ? "USD" : "EUR";
+  const entry: CardPricing = {
+    provider: "cardmarket",
+    currency,
+    low: cm.low ?? undefined,
+    avg: cm.avg ?? undefined,
+    trend: cm.trend ?? undefined,
+    avg7: cm.avg7 ?? undefined,
+    avg30: cm.avg30 ?? undefined,
+    holoAvg: cm["avg-holo"] ?? undefined,
+    updatedAt: cm.updated,
+    sourceUrl: cardmarketSearchUrl(searchName),
+  };
+  // Au moins une valeur de prix utile.
+  if (entry.avg == null && entry.low == null && entry.trend == null) return undefined;
+  return [entry];
 }
 
 export class TcgdexProvider implements CardProvider {
@@ -367,6 +404,7 @@ export class TcgdexProvider implements CardProvider {
       foil: c.foil ?? undefined,
       hasFoilEffect,
       foilStyle,
+      pricing: mapPricing(c, nameEn ?? c.name),
       evolveFrom: c.evolveFrom,
       illustrator: c.illustrator,
       raw: c,

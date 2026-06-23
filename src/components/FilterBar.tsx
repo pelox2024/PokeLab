@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { CardFilters, SetInfo, SortKey } from "../api/types";
 import {
   CATEGORIES,
@@ -13,6 +13,7 @@ import { Chip } from "./ui/Chip";
 import { Select } from "./ui/Select";
 import { Button } from "./ui/Button";
 import { Icon } from "./ui/Icon";
+import { SetPicker } from "./SetPicker";
 import styles from "./FilterBar.module.css";
 
 interface FilterBarProps {
@@ -23,27 +24,59 @@ interface FilterBarProps {
   sets?: SetInfo[];
 }
 
-function countActive(f: CardFilters): number {
-  return Object.values(f).filter((v) => v !== undefined && v !== false && v !== "").length;
+interface ActiveChip {
+  key: keyof CardFilters;
+  label: string;
+}
+
+function buildActiveChips(f: CardFilters, sets?: SetInfo[]): ActiveChip[] {
+  const chips: ActiveChip[] = [];
+  if (f.category) {
+    chips.push({
+      key: "category",
+      label: CATEGORIES.find((c) => c.value === f.category)?.label ?? f.category,
+    });
+  }
+  if (f.type) {
+    chips.push({
+      key: "type",
+      label: POKEMON_TYPES.find((t) => t.value === f.type)?.label ?? f.type,
+    });
+  }
+  if (f.subtype) {
+    chips.push({
+      key: "subtype",
+      label: SUBTYPES.find((s) => s.value === f.subtype)?.label ?? f.subtype,
+    });
+  }
+  if (f.rarity) chips.push({ key: "rarity", label: f.rarity });
+  if (f.regulationMark) chips.push({ key: "regulationMark", label: `Reg. ${f.regulationMark}` });
+  if (f.set) {
+    chips.push({ key: "set", label: sets?.find((s) => s.id === f.set)?.name ?? f.set });
+  }
+  if (f.standardLegal) chips.push({ key: "standardLegal", label: fr.detail.standard });
+  return chips;
 }
 
 export function FilterBar({ filters, onChange, sort, onSortChange, sets }: FilterBarProps) {
   const [advanced, setAdvanced] = useState(false);
-  const activeCount = countActive(filters);
-
-  const setOptions = useMemo(
-    () => (sets ?? []).map((s) => ({ value: s.id, label: s.name })),
-    [sets],
-  );
+  const activeChips = buildActiveChips(filters, sets);
+  const hasActive = activeChips.length > 0;
 
   const toggle = <K extends keyof CardFilters>(key: K, value: CardFilters[K]) => {
     onChange({ ...filters, [key]: filters[key] === value ? undefined : value });
   };
 
+  const clear = (key: keyof CardFilters) => {
+    const next = { ...filters };
+    delete next[key];
+    onChange(next);
+  };
+
   return (
     <div className={styles.bar}>
-      {/* Ligne principale */}
-      <div className={styles.row}>
+      {/* Ligne rapide : catégories + types + outils */}
+      <div className={styles.quick}>
         <div className={styles.group}>
           {CATEGORIES.map((c) => (
             <Chip
@@ -54,9 +87,20 @@ export function FilterBar({ filters, onChange, sort, onSortChange, sets }: Filte
               {c.label}
             </Chip>
           ))}
+          <span className={styles.divider} />
+          {POKEMON_TYPES.map((t) => (
+            <Chip
+              key={t.value}
+              active={filters.type === t.value}
+              accent={t.color}
+              onClick={() => toggle("type", t.value)}
+              title={t.label}
+            >
+              <span className={styles.dot} style={{ background: t.color }} />
+              {t.label}
+            </Chip>
+          ))}
         </div>
-
-        <div className={styles.spacer} />
 
         <div className={styles.tools}>
           <Select
@@ -68,106 +112,100 @@ export function FilterBar({ filters, onChange, sort, onSortChange, sets }: Filte
           <Button
             variant={advanced ? "primary" : "ghost"}
             size="md"
-            iconLeft={<Icon name="sort" size={17} />}
+            iconLeft={<Icon name="sort" size={16} />}
             onClick={() => setAdvanced((v) => !v)}
           >
             {fr.filters.advanced}
-            {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
+            {hasActive && <span className={styles.badge}>{activeChips.length}</span>}
           </Button>
         </div>
       </div>
 
-      {/* Types Pokémon (rangée toujours visible) */}
-      <div className={styles.types}>
-        {POKEMON_TYPES.map((t) => (
-          <Chip
-            key={t.value}
-            active={filters.type === t.value}
-            accent={t.color}
-            onClick={() => toggle("type", t.value)}
-            title={t.label}
-          >
-            <span className={styles.dot} style={{ background: t.color }} />
-            {t.label}
-          </Chip>
-        ))}
-      </div>
-
-      {/* Section avancée repliable */}
-      {advanced && (
-        <div className={styles.advanced}>
-          <div className={styles.field}>
-            <span className={styles.label}>{fr.filters.subtype}</span>
-            <div className={styles.group}>
-              {SUBTYPES.map((s) => (
-                <Chip
-                  key={s.value}
-                  active={filters.subtype === s.value}
-                  onClick={() => toggle("subtype", s.value)}
-                >
-                  {s.label}
-                </Chip>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>{fr.filters.rarity}</span>
-            <div className={styles.group}>
-              {RARITIES.map((r) => (
-                <Chip key={r} active={filters.rarity === r} onClick={() => toggle("rarity", r)}>
-                  {r}
-                </Chip>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>{fr.filters.regulationMark}</span>
-            <div className={styles.group}>
-              {REGULATION_MARKS.map((m) => (
-                <Chip
-                  key={m}
-                  active={filters.regulationMark === m}
-                  onClick={() => toggle("regulationMark", m)}
-                >
-                  {m}
-                </Chip>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.fieldRow}>
-            <div className={styles.field}>
-              <span className={styles.label}>{fr.filters.set}</span>
-              <Select
-                options={setOptions}
-                placeholder={fr.filters.setPlaceholder}
-                value={filters.set ?? ""}
-                onChange={(e) => onChange({ ...filters, set: e.target.value || undefined })}
-                className={styles.setSelect}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <span className={styles.label}>{fr.filters.format}</span>
-              <Chip
-                active={!!filters.standardLegal}
-                onClick={() => toggle("standardLegal", true)}
-                accent="var(--success)"
-              >
-                {fr.filters.standardLegal}
-              </Chip>
-            </div>
-
-            {activeCount > 0 && (
-              <Button variant="subtle" size="sm" onClick={() => onChange({})}>
-                {fr.filters.reset}
-              </Button>
-            )}
-          </div>
+      {/* Résumé des filtres actifs */}
+      {hasActive && (
+        <div className={styles.active}>
+          {activeChips.map((c) => (
+            <button key={c.key} type="button" className={styles.activeChip} onClick={() => clear(c.key)}>
+              {c.label}
+              <Icon name="close" size={12} />
+            </button>
+          ))}
+          <button type="button" className={styles.resetAll} onClick={() => onChange({})}>
+            {fr.filters.resetAll}
+          </button>
         </div>
       )}
+
+      {/* Section avancée — collapse animé */}
+      <div className={[styles.advWrap, advanced ? styles.advOpen : ""].filter(Boolean).join(" ")}>
+        <div className={styles.advInner}>
+          <div className={styles.advPanel}>
+            <div className={styles.field}>
+              <span className={styles.label}>{fr.filters.subtype}</span>
+              <div className={styles.group}>
+                {SUBTYPES.map((s) => (
+                  <Chip
+                    key={s.value}
+                    active={filters.subtype === s.value}
+                    onClick={() => toggle("subtype", s.value)}
+                  >
+                    {s.label}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.field}>
+              <span className={styles.label}>{fr.filters.rarity}</span>
+              <div className={styles.group}>
+                {RARITIES.map((r) => (
+                  <Chip key={r} active={filters.rarity === r} onClick={() => toggle("rarity", r)}>
+                    {r}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.field}>
+                <span className={styles.label}>{fr.filters.regulationMark}</span>
+                <div className={styles.group}>
+                  {REGULATION_MARKS.map((m) => (
+                    <Chip
+                      key={m}
+                      active={filters.regulationMark === m}
+                      onClick={() => toggle("regulationMark", m)}
+                    >
+                      {m}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>{fr.filters.format}</span>
+                <Chip
+                  active={!!filters.standardLegal}
+                  onClick={() => toggle("standardLegal", true)}
+                  accent="var(--success)"
+                >
+                  {fr.filters.standardLegal}
+                </Chip>
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>{fr.filters.set}</span>
+                <SetPicker
+                  sets={sets ?? []}
+                  value={filters.set}
+                  onChange={(id) => onChange({ ...filters, set: id })}
+                  placeholder={fr.filters.setPlaceholder}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

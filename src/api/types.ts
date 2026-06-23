@@ -46,6 +46,20 @@ export interface WeakRes {
   value?: string;
 }
 
+/** Prix de marché normalisé (voir vision collection). */
+export interface CardPricing {
+  provider: "cardmarket" | "tcgplayer" | "manual";
+  currency: "EUR" | "CHF" | "USD";
+  low?: number;
+  avg?: number;
+  trend?: number;
+  avg7?: number;
+  avg30?: number;
+  holoAvg?: number;
+  updatedAt?: string;
+  sourceUrl?: string;
+}
+
 /** Carte normalisée — voir §11 du brief. */
 export interface CardRecord {
   id: string; // id global (provider:providerId)
@@ -76,6 +90,7 @@ export interface CardRecord {
   foil?: string;
   hasFoilEffect?: boolean;
   foilStyle?: FoilStyle;
+  pricing?: CardPricing[];
   evolveFrom?: string;
   illustrator?: string;
   raw?: unknown; // payload brut du provider (debug / enrichissement futur)

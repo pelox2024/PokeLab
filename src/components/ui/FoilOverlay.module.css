@@ -1,0 +1,96 @@
+/* Géométrie approximative de l'artbox d'une carte Pokémon moderne */
+.reverseGroup {
+  --art-top: 14%;
+  --art-side: 7%;
+  --art-h: 36%;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  pointer-events: none;
+  opacity: calc(var(--foil-opacity, 0) * 0.6);
+  transition: opacity var(--t-med);
+  mix-blend-mode: color-dodge;
+  border-radius: 10px;
+}
+
+/* --- Styles de brillance --- */
+.holo {
+  background: linear-gradient(
+    115deg,
+    transparent 22%,
+    rgba(120, 180, 255, 0.45) 40%,
+    rgba(190, 130, 255, 0.5) 50%,
+    rgba(120, 255, 220, 0.45) 60%,
+    transparent 78%
+  );
+  background-size: 220% 220%;
+  background-position: var(--mx, 50%) var(--my, 50%);
+}
+
+.rainbow {
+  background: linear-gradient(
+    115deg,
+    rgba(255, 120, 180, 0.45) 20%,
+    rgba(255, 210, 120, 0.45) 35%,
+    rgba(120, 255, 180, 0.45) 50%,
+    rgba(120, 200, 255, 0.45) 65%,
+    rgba(200, 130, 255, 0.45) 80%
+  );
+  background-size: 240% 240%;
+  background-position: var(--mx, 50%) var(--my, 50%);
+}
+
+.reverse {
+  opacity: calc(var(--foil-opacity, 0) * 0.42);
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.05) 0px,
+    rgba(160, 200, 255, 0.2) 6px,
+    rgba(200, 160, 255, 0.2) 12px,
+    rgba(255, 255, 255, 0.05) 18px
+  );
+  background-size: 200% 200%;
+  background-position: var(--mx, 50%) var(--my, 50%);
+  mix-blend-mode: screen;
+}
+
+/* --- Zones --- */
+.full {
+  inset: 0;
+}
+
+.artbox {
+  top: 14%;
+  left: 7%;
+  right: 7%;
+  height: 36%;
+}
+
+.rvTop {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--art-top);
+}
+.rvBottom {
+  top: calc(var(--art-top) + var(--art-h));
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.rvLeft {
+  top: var(--art-top);
+  left: 0;
+  width: var(--art-side);
+  height: var(--art-h);
+}
+.rvRight {
+  top: var(--art-top);
+  right: 0;
+  width: var(--art-side);
+  height: var(--art-h);
+}

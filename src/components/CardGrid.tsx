@@ -1,16 +1,25 @@
 import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
 import type { CardBrief } from "../api/types";
 import { CardTile } from "./CardTile";
 import { Skeleton } from "./ui/Skeleton";
 import styles from "./CardGrid.module.css";
+
+export type GridSize = "compact" | "normal" | "large";
+
+const COL_MIN: Record<GridSize, string> = {
+  compact: "116px",
+  normal: "150px",
+  large: "190px",
+};
 
 interface CardGridProps {
   cards: CardBrief[];
   onCardClick?: (card: CardBrief) => void;
   loadingMore?: boolean;
   onReachEnd?: () => void;
-  /** Affiche des skeletons (premier chargement). */
   skeletonCount?: number;
+  size?: GridSize;
 }
 
 export function CardGrid({
@@ -19,6 +28,7 @@ export function CardGrid({
   loadingMore,
   onReachEnd,
   skeletonCount = 0,
+  size = "normal",
 }: CardGridProps) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -36,9 +46,11 @@ export function CardGrid({
     return () => obs.disconnect();
   }, [onReachEnd]);
 
+  const gridStyle = { ["--col-min" as string]: COL_MIN[size] } as CSSProperties;
+
   if (skeletonCount > 0) {
     return (
-      <div className={styles.grid}>
+      <div className={styles.grid} style={gridStyle}>
         {Array.from({ length: skeletonCount }).map((_, i) => (
           <div key={i} className={styles.skelTile}>
             <Skeleton height="100%" radius="var(--radius-md)" className={styles.skelImg} />
@@ -51,13 +63,13 @@ export function CardGrid({
 
   return (
     <>
-      <div className={styles.grid}>
+      <div className={styles.grid} style={gridStyle}>
         {cards.map((card) => (
           <CardTile key={card.id} card={card} onClick={onCardClick} />
         ))}
       </div>
       {loadingMore && (
-        <div className={styles.grid} style={{ marginTop: 18 }}>
+        <div className={styles.grid} style={{ ...gridStyle, marginTop: 18 }}>
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className={styles.skelTile}>
               <Skeleton height="100%" radius="var(--radius-md)" className={styles.skelImg} />

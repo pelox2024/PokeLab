@@ -49,3 +49,99 @@ export interface CachedCard {
   updatedAt: number;
   data: unknown; // CardRecord sérialisé
 }
+
+/* ============================================================
+   Collection — types préparés pour les Phases 5/6/7.
+   (architecture seulement, pas encore de logique en V1)
+   ============================================================ */
+
+export type CardVariantKind =
+  | "normal"
+  | "reverse"
+  | "holo"
+  | "firstEdition"
+  | "promo"
+  | "other";
+
+export type CardCondition =
+  | "mint"
+  | "nearMint"
+  | "excellent"
+  | "good"
+  | "played"
+  | "poor";
+
+export type CardLanguage = "en" | "fr" | "de" | "it" | "ja" | "other";
+
+export type Currency = "EUR" | "CHF" | "USD";
+
+export interface CollectionItem {
+  id: string;
+  cardId?: string;
+  name: string;
+  setCode?: string;
+  number?: string;
+  variant: CardVariantKind;
+  quantity: number;
+  language: CardLanguage;
+  condition?: CardCondition;
+  isGraded?: boolean;
+  gradeCompany?: "PSA" | "BGS" | "CGC" | "Other";
+  grade?: string;
+  purchasePrice?: number;
+  estimatedPrice?: number;
+  currency?: Currency;
+  location?: string;
+  binderId?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Binder {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WishlistItem {
+  id: string;
+  cardId?: string;
+  name: string;
+  setCode?: string;
+  number?: string;
+  wantedQuantity: number;
+  maxPrice?: number;
+  priority: "low" | "medium" | "high";
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ---- Deck completion (Phase 6) ---- */
+
+export interface MissingCard {
+  cardName: string;
+  setCode?: string;
+  number?: string;
+  neededQuantity: number;
+  ownedQuantity: number;
+  missingQuantity: number;
+  estimatedUnitPrice?: number;
+  estimatedTotalPrice?: number;
+  source?: "cardmarket" | "tcgplayer" | "manual";
+}
+
+export interface DeckCompletion {
+  totalCards: number;
+  ownedCards: number;
+  missingCards: number;
+  completionPercent: number;
+  estimatedMissingCost: number;
+  currency: Currency;
+  missingList: MissingCard[];
+}

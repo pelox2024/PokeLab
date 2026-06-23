@@ -1,7 +1,9 @@
+import { useState } from "react";
 import type { ReactNode } from "react";
-import type { CardRecord, FoilStyle } from "../api/types";
+import type { CardRecord } from "../api/types";
 import { useCardDetail } from "../hooks/useCards";
 import { useFoilHover } from "../hooks/useFoilHover";
+import { cardmarketSearchUrl, getFoilPresentation, pickCardmarket } from "../lib/foil";
 import { TYPE_COLORS } from "../lib/filters";
 import { fr } from "../lib/i18n";
 import { Modal } from "./ui/Modal";
@@ -9,6 +11,7 @@ import { Button } from "./ui/Button";
 import { Skeleton } from "./ui/Skeleton";
 import { EmptyState } from "./ui/EmptyState";
 import { Icon } from "./ui/Icon";
+import { FoilOverlay } from "./ui/FoilOverlay";
 import styles from "./CardDetailModal.module.css";
 
 interface CardDetailModalProps {
@@ -59,8 +62,12 @@ function StatRow({ label, value }: { label: string; value?: ReactNode }) {
 }
 
 function FoilImage({ card }: { card: CardRecord }) {
-  const { ref, onPointerMove, onPointerLeave } = useFoilHover<HTMLDivElement>(true);
-  const foil: FoilStyle = card.foilStyle ?? "none";
+  const presentation = getFoilPresentation(card);
+  const special = presentation.zone !== "none";
+  const { ref, onPointerMove, onPointerLeave } = useFoilHover<HTMLDivElement>({
+    tilt: true,
+    glare: special,
+  });
   return (
     <div className={styles.imageWrap}>
       <div
@@ -74,30 +81,118 @@ function FoilImage({ card }: { card: CardRecord }) {
         ) : (
           <div className={styles.imageFallback}>
             <Icon name="cards" size={40} />
-            <span>{card.displayName}</span>
+            <span className={styles.fbName}>{card.displayName}</span>
+            {card.number && <span className={styles.fbNum}>N° {card.number}</span>}
             <span className={styles.imageFallbackMsg}>Image indisponible</span>
           </div>
         )}
-        {foil !== "none" && (
-          <span
-            className={[
-              styles.foil,
-              foil === "reverse" ? styles.foilReverse : styles.foilHolo,
-            ].join(" ")}
-          />
+        {special && card.imageUrl && (
+          <>
+            <FoilOverlay zone={presentation.zone} style={presentation.style} />
+            <span className={styles.glare} />
+          </>
         )}
-        <span className={styles.glare} />
       </div>
     </div>
   );
 }
 
+/** Bouton qui copie une valeur dans le presse-papiers avec feedback. */
+function CopyButton({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* presse-papiers indisponible — on ignore silencieusement */
+    }
+  };
+  return (
+    <Button variant="ghost" size="sm" iconLeft={copied ? <Icon name="spark" size={15} /> : icon} onClick={copy}>
+      {copied ? fr.detail.copied : label}
+    </Button>
+  );
+}
+
+function PriceBlock({ card }: { card: CardRecord }) {
+  const cm = pickCardmarket(card.pricing);
+  const fmt = (n?: number) => (n != null ? `${n.toFixed(2)} ${cm?.currency ?? "EUR"}` : fr.detail.none);
+
+  if (!cm) {
+    return (
+      <section className={styles.priceBlock}>
+        <div className={styles.priceHead}>
+          <h3 className={styles.sectionTitle}>{fr.detail.price}</h3>
+          <span className={styles.priceUnavailable}>{fr.detail.priceUnavailable}</span>
+        </div>
+        <a
+          className={styles.cmLink}
+          href={cardmarketSearchUrl(card.name)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {fr.detail.viewCardmarket}
+          <Icon name="spark" size={14} />
+        </a>
+      </section>
+    );
+  }
+
+  const date = cm.updatedAt ? new Date(cm.updatedAt).toLocaleDateString("fr-FR") : undefined;
+
+  return (
+    <section className={styles.priceBlock}>
+      <div className={styles.priceHead}>
+        <h3 className={styles.sectionTitle}>{fr.detail.price}</h3>
+        <span className={styles.cmTag}>Cardmarket</span>
+      </div>
+      <div className={styles.priceGrid}>
+        <div className={styles.priceCell}>
+          <span className={styles.priceLabel}>{fr.detail.priceLow}</span>
+          <span className={styles.priceValue}>{fmt(cm.low)}</span>
+        </div>
+        <div className={styles.priceCell}>
+          <span className={styles.priceLabel}>{fr.detail.priceTrend}</span>
+          <span className={[styles.priceValue, styles.priceTrend].join(" ")}>{fmt(cm.trend)}</span>
+        </div>
+        <div className={styles.priceCell}>
+          <span className={styles.priceLabel}>{fr.detail.priceAvg}</span>
+          <span className={styles.priceValue}>{fmt(cm.avg)}</span>
+        </div>
+        {cm.holoAvg != null && (
+          <div className={styles.priceCell}>
+            <span className={styles.priceLabel}>{fr.detail.priceHolo}</span>
+            <span className={styles.priceValue}>{fmt(cm.holoAvg)}</span>
+          </div>
+        )}
+      </div>
+      <div className={styles.priceFooter}>
+        <a
+          className={styles.cmLink}
+          href={cm.sourceUrl ?? cardmarketSearchUrl(card.name)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {fr.detail.viewCardmarket}
+          <Icon name="spark" size={14} />
+        </a>
+        {date && <span className={styles.priceDate}>{fr.detail.priceUpdated(date)}</span>}
+      </div>
+    </section>
+  );
+}
+
 function DetailContent({ card }: { card: CardRecord }) {
-  const otherName = card.nameFr && card.nameEn && card.nameFr !== card.nameEn
-    ? card.displayName === card.nameEn
-      ? card.nameFr
-      : card.nameEn
-    : undefined;
+  const otherName =
+    card.nameFr && card.nameEn && card.nameFr !== card.nameEn
+      ? card.displayName === card.nameEn
+        ? card.nameFr
+        : card.nameEn
+      : undefined;
+
+  const idValue = card.setId && card.number ? `${card.setId.toUpperCase()} ${card.number}` : card.providerId;
 
   const activeVariants = [
     card.variants?.normal && fr.variant.normal,
@@ -126,6 +221,23 @@ function DetailContent({ card }: { card: CardRecord }) {
             {card.hp != null && <span className={styles.hp}>{card.hp} PV</span>}
           </div>
         </header>
+
+        {/* Actions rapides */}
+        <div className={styles.quickActions}>
+          <CopyButton label={fr.detail.copyName} value={card.name} icon={<Icon name="cards" size={15} />} />
+          <CopyButton label={fr.detail.copyId} value={idValue} icon={<Icon name="decks" size={15} />} />
+          {card.imageUrl && (
+            <a
+              className={styles.openImg}
+              href={card.imageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon name="search" size={15} />
+              {fr.detail.openImage}
+            </a>
+          )}
+        </div>
 
         <div className={styles.statsBlock}>
           <StatRow label={fr.detail.set} value={card.setName} />
@@ -183,6 +295,9 @@ function DetailContent({ card }: { card: CardRecord }) {
           </section>
         ) : null}
 
+        {/* Prix */}
+        <PriceBlock card={card} />
+
         {/* Légalité + variantes */}
         <div className={styles.badgesRow}>
           {card.legalities && (
@@ -207,15 +322,18 @@ function DetailContent({ card }: { card: CardRecord }) {
         </div>
 
         <div className={styles.actions}>
-          <Button variant="primary" disabled iconLeft={<Icon name="plus" size={18} />}>
-            {fr.cards.addToDeck}
-          </Button>
-          {card.illustrator && (
-            <span className={styles.illustrator}>
-              {fr.detail.illustrator} · {card.illustrator}
-            </span>
-          )}
+          <button type="button" className={styles.addSoon} disabled>
+            <Icon name="plus" size={16} />
+            {fr.detail.addToDeckSoon}
+          </button>
+          <span className={styles.collSoon}>{fr.detail.inCollectionSoon}</span>
         </div>
+
+        {card.illustrator && (
+          <span className={styles.illustrator}>
+            {fr.detail.illustrator} · {card.illustrator}
+          </span>
+        )}
       </div>
     </div>
   );
