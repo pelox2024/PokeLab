@@ -46,9 +46,26 @@ export interface WeakRes {
   value?: string;
 }
 
+/**
+ * Fiabilité d'un prix.
+ * - exact      : prix + page produit exacte garantis
+ * - variant    : prix d'une variante précise (mais pas page exacte)
+ * - indicative : donnée agrégée (TCGdex), variante non garantie
+ * - search_only: pas de prix fiable, seulement un lien de recherche
+ * - unavailable: aucune donnée
+ * - unsafe     : donnée présente mais jugée trompeuse (à ne pas afficher)
+ */
+export type PriceConfidence =
+  | "exact"
+  | "variant"
+  | "indicative"
+  | "search_only"
+  | "unavailable"
+  | "unsafe";
+
 /** Prix de marché normalisé (voir vision collection). */
 export interface CardPricing {
-  provider: "cardmarket" | "tcgplayer" | "manual";
+  provider: "cardmarket" | "tcgplayer" | "manual" | "tcgdex";
   currency: "EUR" | "CHF" | "USD";
   low?: number;
   avg?: number;
@@ -61,12 +78,10 @@ export interface CardPricing {
   holoAvg7?: number;
   holoAvg30?: number;
   updatedAt?: string;
-  sourceUrl?: string;
-  /**
-   * Fiabilité de la donnée. "low" quand le prix semble mal lié (ex: carte
-   * full-art renvoyant le prix plancher de la version commune via TCGdex).
-   */
-  confidence?: "low" | "medium" | "high";
+  sourceUrl?: string; // page produit exacte (si garantie)
+  searchUrl?: string; // recherche générique Cardmarket
+  confidence: PriceConfidence;
+  confidenceReason?: string;
 }
 
 /** Carte normalisée — voir §11 du brief. */

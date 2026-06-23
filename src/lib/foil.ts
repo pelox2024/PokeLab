@@ -1,4 +1,4 @@
-import type { CardPricing, CardRecord, CardVariants, FoilStyle } from "../api/types";
+import type { CardRecord, CardVariants, FoilStyle } from "../api/types";
 
 /* ============================================================
    Détection des raretés
@@ -39,9 +39,6 @@ const ARTBOX_HOLO_RARITY_PATTERNS: RegExp[] = [
   /prism/i,
   /prime/i,
 ];
-
-/** Suffixes Pokémon modernes qui sont généralement holo (mais pas full-art). */
-const HOLO_SUFFIX = /^(ex|gx|v|vmax|vstar|v-union)$/i;
 
 export function isFullArtRarity(rarity?: string): boolean {
   if (!rarity) return false;
@@ -187,54 +184,15 @@ export function getCardVisualTreatment(card: VisualInput): CardVisualTreatment {
     };
   }
 
-  // 3) Holo classique -> zone d'illustration
-  const suffixHolo = card.suffix ? HOLO_SUFFIX.test(card.suffix) : false;
-  if (card.variants?.holo || isArtboxHoloRarity(card.rarity) || suffixHolo) {
-    return {
-      foilZone: "artbox",
-      foilStyle: "holo",
-      layout: pickLayout(card, false),
-      confidence: "high",
-      reason: card.variants?.holo
-        ? "variants.holo"
-        : suffixHolo
-          ? `Suffixe ${card.suffix}`
-          : `Rareté holo: ${card.rarity}`,
-    };
-  }
-
-  // 4) Reverse holo -> pourtour, hors illustration
-  if (card.variants?.reverse) {
-    return {
-      foilZone: "reverse",
-      foilStyle: "reverse",
-      layout: pickLayout(card, false),
-      confidence: "high",
-      reason: "variants.reverse",
-    };
-  }
-
+  // 3) Holo classique / reverse / ex simple :
+  // l'API ne fournit pas de masque d'illustration fiable et les templates
+  // varient selon les générations -> on n'applique PAS de rectangle pour
+  // l'instant (décision produit Lot 2.7 : sobriété > effet faux).
   return {
     foilZone: "none",
     foilStyle: "none",
     layout: pickLayout(card, false),
     confidence: "high",
-    reason: "Carte normale",
+    reason: "Holo/reverse/normal : pas d'overlay localisé (sobriété)",
   };
-}
-
-/* ============================================================
-   Prix / Cardmarket
-   ============================================================ */
-
-export function pickCardmarket(pricing?: CardPricing[]): CardPricing | undefined {
-  return pricing?.find((p) => p.provider === "cardmarket");
-}
-
-/** Lien de recherche Cardmarket (pas d'API privée, juste une recherche). */
-export function cardmarketSearchUrl(name: string, setName?: string): string {
-  const q = setName ? `${name} ${setName}` : name;
-  return `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(
-    q,
-  )}`;
 }

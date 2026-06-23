@@ -1,9 +1,10 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import type { CardRecord } from "../api/types";
-import { useCardDetail } from "../hooks/useCards";
+import type { CardPricing, CardRecord } from "../api/types";
+import { useCardDetail, usePokemontcgPrice } from "../hooks/useCards";
 import { useFoilHover } from "../hooks/useFoilHover";
-import { cardmarketSearchUrl, getCardVisualTreatment, pickCardmarket } from "../lib/foil";
+import { getCardVisualTreatment } from "../lib/foil";
+import { cardmarketLink, canShowPrice, hasExactLink, pickCardmarket } from "../lib/pricing";
 import { TYPE_COLORS } from "../lib/filters";
 import { fr } from "../lib/i18n";
 import { Modal } from "./ui/Modal";
@@ -116,101 +117,103 @@ function CopyButton({ label, value, icon }: { label: string; value: string; icon
   );
 }
 
-function PriceBlock({ card }: { card: CardRecord }) {
-  const cm = pickCardmarket(card.pricing);
-  const cmLink = cm?.sourceUrl ?? cardmarketSearchUrl(card.name, card.setName);
+function PriceBlock({ card, cm }: { card: CardRecord; cm?: CardPricing }) {
+  const exact = hasExactLink(cm);
+  const link = cardmarketLink(card, cm);
   const fmt = (n?: number) => (n != null ? `${n.toFixed(2)} ${cm?.currency ?? "EUR"}` : fr.detail.none);
 
-  const CardmarketLink = (
-    <a className={styles.cmLink} href={cmLink} target="_blank" rel="noopener noreferrer">
-      {fr.detail.viewCardmarket}
-      <Icon name="spark" size={14} />
+  const LinkButton = (
+    <a className={styles.cmLink} href={link} target="_blank" rel="noopener noreferrer">
+      {exact ? fr.detail.viewCardmarket : fr.detail.searchCardmarket}
+      <Icon name="search" size={14} />
     </a>
   );
 
-  // Aucune donnée de prix.
-  if (!cm) {
-    return (
-      <section className={styles.priceBlock}>
-        <div className={styles.priceHead}>
-          <h3 className={styles.sectionTitle}>{fr.detail.price}</h3>
-          <span className={styles.priceUnavailable}>{fr.detail.priceUnavailable}</span>
-        </div>
-        {CardmarketLink}
-      </section>
-    );
-  }
+  const showValues = canShowPrice(cm);
+  const date = cm?.updatedAt ? new Date(cm.updatedAt).toLocaleDateString("fr-FR") : undefined;
+  const hasHolo = cm != null && (cm.holoAvg != null || cm.holoLow != null || cm.holoTrend != null);
 
-  // Donnée peu fiable (TCGdex renvoie le prix de base pour une version alt).
-  if (cm.confidence === "low") {
-    return (
-      <section className={styles.priceBlock}>
-        <div className={styles.priceHead}>
-          <h3 className={styles.sectionTitle}>{fr.detail.price}</h3>
-          <span className={styles.cmTag}>Cardmarket</span>
-        </div>
-        <p className={styles.priceWarn}>{fr.detail.priceUnreliable}</p>
-        {CardmarketLink}
-      </section>
-    );
-  }
+  // Titre + tag selon la confiance
+  const indicative = cm?.confidence === "indicative";
+  const title = indicative ? fr.detail.priceIndicative : fr.detail.price;
 
-  const date = cm.updatedAt ? new Date(cm.updatedAt).toLocaleDateString("fr-FR") : undefined;
-  const hasHolo = cm.holoAvg != null || cm.holoLow != null || cm.holoTrend != null;
+  let tag: string | null = null;
+  if (cm?.confidence === "exact" || cm?.confidence === "variant") tag = "Cardmarket";
+  else if (indicative) tag = "Cardmarket · indicatif";
 
   return (
     <section className={styles.priceBlock}>
       <div className={styles.priceHead}>
-        <h3 className={styles.sectionTitle}>{fr.detail.price}</h3>
-        <span className={styles.cmTag}>Cardmarket</span>
+        <h3 className={styles.sectionTitle}>{title}</h3>
+        {tag && <span className={styles.cmTag}>{tag}</span>}
+        {!tag && (
+          <span className={styles.priceUnavailable}>
+            {cm?.confidence === "unsafe" ? fr.detail.priceToVerify : fr.detail.priceUnavailable}
+          </span>
+        )}
       </div>
 
-      <div className={styles.priceGrid}>
-        <div className={styles.priceCell}>
-          <span className={styles.priceLabel}>{fr.detail.priceLow}</span>
-          <span className={styles.priceValue}>{fmt(cm.low)}</span>
-        </div>
-        <div className={styles.priceCell}>
-          <span className={styles.priceLabel}>{fr.detail.priceTrend}</span>
-          <span className={[styles.priceValue, styles.priceTrend].join(" ")}>{fmt(cm.trend)}</span>
-        </div>
-        <div className={styles.priceCell}>
-          <span className={styles.priceLabel}>{fr.detail.priceAvg}</span>
-          <span className={styles.priceValue}>{fmt(cm.avg)}</span>
-        </div>
-      </div>
+      {/* Message de prudence quand on ne montre pas de chiffres */}
+      {cm?.confidence === "unsafe" && <p className={styles.priceWarn}>{fr.detail.priceUnsafe}</p>}
+      {!cm && <p className={styles.priceMuted}>{fr.detail.priceNoData}</p>}
 
-      {hasHolo && (
+      {/* Valeurs seulement si exploitables */}
+      {showValues && (
         <>
-          <span className={styles.priceSub}>{fr.detail.priceHolo}</span>
           <div className={styles.priceGrid}>
             <div className={styles.priceCell}>
               <span className={styles.priceLabel}>{fr.detail.priceLow}</span>
-              <span className={styles.priceValue}>{fmt(cm.holoLow)}</span>
+              <span className={styles.priceValue}>{fmt(cm!.low)}</span>
             </div>
             <div className={styles.priceCell}>
               <span className={styles.priceLabel}>{fr.detail.priceTrend}</span>
-              <span className={[styles.priceValue, styles.priceTrend].join(" ")}>
-                {fmt(cm.holoTrend)}
-              </span>
+              <span className={[styles.priceValue, styles.priceTrend].join(" ")}>{fmt(cm!.trend)}</span>
             </div>
             <div className={styles.priceCell}>
               <span className={styles.priceLabel}>{fr.detail.priceAvg}</span>
-              <span className={styles.priceValue}>{fmt(cm.holoAvg)}</span>
+              <span className={styles.priceValue}>{fmt(cm!.avg)}</span>
             </div>
           </div>
+
+          {hasHolo && (
+            <>
+              <span className={styles.priceSub}>{fr.detail.priceHolo}</span>
+              <div className={styles.priceGrid}>
+                <div className={styles.priceCell}>
+                  <span className={styles.priceLabel}>{fr.detail.priceLow}</span>
+                  <span className={styles.priceValue}>{fmt(cm!.holoLow)}</span>
+                </div>
+                <div className={styles.priceCell}>
+                  <span className={styles.priceLabel}>{fr.detail.priceTrend}</span>
+                  <span className={[styles.priceValue, styles.priceTrend].join(" ")}>
+                    {fmt(cm!.holoTrend)}
+                  </span>
+                </div>
+                <div className={styles.priceCell}>
+                  <span className={styles.priceLabel}>{fr.detail.priceAvg}</span>
+                  <span className={styles.priceValue}>{fmt(cm!.holoAvg)}</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {indicative && <p className={styles.priceMuted}>{fr.detail.priceIndicativeNote}</p>}
         </>
       )}
 
       <div className={styles.priceFooter}>
-        {CardmarketLink}
-        {date && <span className={styles.priceDate}>{fr.detail.priceUpdated(date)}</span>}
+        {LinkButton}
+        {showValues && date && <span className={styles.priceDate}>{fr.detail.priceUpdated(date)}</span>}
       </div>
     </section>
   );
 }
 
 function DetailContent({ card }: { card: CardRecord }) {
+  // Prix exact via pokemontcg.io (prioritaire), repli TCGdex indicatif.
+  const { data: livePrice } = usePokemontcgPrice(card);
+  const resolvedPrice = livePrice ?? pickCardmarket(card.pricing);
+
   const otherName =
     card.nameFr && card.nameEn && card.nameFr !== card.nameEn
       ? card.displayName === card.nameEn
@@ -322,7 +325,7 @@ function DetailContent({ card }: { card: CardRecord }) {
         ) : null}
 
         {/* Prix */}
-        <PriceBlock card={card} />
+        <PriceBlock card={card} cm={resolvedPrice} />
 
         {/* Légalité + variantes */}
         <div className={styles.badgesRow}>
@@ -347,19 +350,14 @@ function DetailContent({ card }: { card: CardRecord }) {
           ))}
         </div>
 
-        <div className={styles.actions}>
-          <button type="button" className={styles.addSoon} disabled>
-            <Icon name="plus" size={16} />
-            {fr.detail.addToDeckSoon}
-          </button>
-          <span className={styles.collSoon}>{fr.detail.inCollectionSoon}</span>
+        <div className={styles.footerRow}>
+          {card.illustrator && (
+            <span className={styles.illustrator}>
+              {fr.detail.illustrator} · {card.illustrator}
+            </span>
+          )}
+          <span className={styles.soonNote}>{fr.detail.addToDeckSoon}</span>
         </div>
-
-        {card.illustrator && (
-          <span className={styles.illustrator}>
-            {fr.detail.illustrator} · {card.illustrator}
-          </span>
-        )}
       </div>
     </div>
   );

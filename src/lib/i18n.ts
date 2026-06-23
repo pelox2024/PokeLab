@@ -63,14 +63,20 @@ export const fr = {
     addToDeckSoon: "Disponible bientôt dans le Constructeur",
     inCollectionSoon: "Dans ma collection : bientôt",
     price: "Prix",
+    priceIndicative: "Prix indicatif",
     priceUnavailable: "Prix indisponible",
-    priceUnreliable:
-      "Prix de marché peu fiable pour cette version (données de base). Vérifiez sur Cardmarket.",
+    priceToVerify: "Prix à vérifier",
+    priceIndicativeNote:
+      "À vérifier : le prix peut varier selon la langue, l'état et la variante exacte.",
+    priceUnsafe:
+      "Cette carte semble être une version spéciale et la donnée de prix retournée paraît peu fiable. Vérifiez sur Cardmarket.",
+    priceNoData: "Aucune donnée de prix fiable pour cette carte.",
     priceLow: "Bas",
     priceTrend: "Tendance",
     priceAvg: "Moyen",
     priceHolo: "Holo",
     viewCardmarket: "Voir sur Cardmarket",
+    searchCardmarket: "Rechercher sur Cardmarket",
     priceUpdated: (d: string) => `Mis à jour le ${d}`,
   },
   variant: {

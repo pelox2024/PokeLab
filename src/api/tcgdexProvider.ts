@@ -8,7 +8,8 @@
  * - les IDs sont identiques entre langues -> recherche bilingue EN/FR par fusion.
  */
 
-import { cardmarketSearchUrl, isFullArtRarity, resolveFoilStyle } from "../lib/foil";
+import { resolveFoilStyle } from "../lib/foil";
+import { cardmarketSearchUrl, evaluatePriceConfidence } from "../lib/pricing";
 import type {
   Ability,
   Attack,
@@ -229,13 +230,20 @@ function mapWeakRes(list?: { type: string; value?: string }[]): WeakRes[] | unde
 function mapPricing(c: TcgdexCard, searchName: string): CardPricing[] | undefined {
   const cm = c.pricing?.cardmarket;
   if (!cm) return undefined;
+  const hasPrice = cm.avg != null || cm.low != null || cm.trend != null;
+  if (!hasPrice) return undefined;
+
   const currency = cm.unit === "EUR" ? "EUR" : cm.unit === "USD" ? "USD" : "EUR";
 
-  // Garde de plausibilité : TCGdex lie parfois une carte full-art au produit
-  // de la version commune -> prix plancher (~0,02 €) absurde pour une SIR.
-  const fullCard = isFullArtRarity(c.rarity);
-  const looksLikeBaseFloor = (cm.low ?? 1) <= 0.05 && (cm.avg ?? 99) < 2;
-  const confidence: CardPricing["confidence"] = fullCard && looksLikeBaseFloor ? "low" : "high";
+  // TCGdex ne fournit pas de page produit exacte -> jamais "exact".
+  // La heuristique bascule en "unsafe" si une carte spéciale a un prix plancher.
+  const { confidence, reason } = evaluatePriceConfidence({
+    rarity: c.rarity,
+    low: cm.low ?? undefined,
+    avg: cm.avg ?? undefined,
+    hasExactUrl: false,
+    hasPrice: true,
+  });
 
   const entry: CardPricing = {
     provider: "cardmarket",
@@ -251,11 +259,10 @@ function mapPricing(c: TcgdexCard, searchName: string): CardPricing[] | undefine
     holoAvg7: cm["avg7-holo"] ?? undefined,
     holoAvg30: cm["avg30-holo"] ?? undefined,
     updatedAt: cm.updated,
-    sourceUrl: cardmarketSearchUrl(searchName, c.set?.name),
+    searchUrl: cardmarketSearchUrl(searchName),
     confidence,
+    confidenceReason: reason,
   };
-  // Au moins une valeur de prix utile.
-  if (entry.avg == null && entry.low == null && entry.trend == null) return undefined;
   return [entry];
 }
 

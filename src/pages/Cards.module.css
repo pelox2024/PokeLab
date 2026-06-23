@@ -80,20 +80,20 @@
 .heroCta {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  gap: 7px;
+  padding: 8px 12px;
   border-radius: var(--radius-pill);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--text);
-  background: var(--surface-glass);
-  border: 1px solid var(--border-glass);
-  transition: background var(--t-fast), border-color var(--t-fast);
+  font-size: var(--fs-xs);
+  font-weight: 550;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-faint);
+  transition: color var(--t-fast), border-color var(--t-fast);
 }
 
 .heroCta:hover {
-  background: var(--surface-hover);
-  border-color: var(--border-strong);
+  color: var(--text);
+  border-color: var(--border-glass);
 }
 
 /* ---- Placeholder pages (compat) ---- */

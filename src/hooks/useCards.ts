@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { activeProvider } from "../api/cardApi";
-import type { CardFilters, CardPage, SortKey } from "../api/types";
+import { fetchPokemontcgPricing } from "../api/pokemontcgPricing";
+import type { CardFilters, CardPage, CardRecord, SortKey } from "../api/types";
 
 const PAGE_SIZE = 40;
 
@@ -32,6 +33,22 @@ export function useCardDetail(providerId: string | null) {
     queryFn: () => activeProvider.getCard(providerId as string),
     enabled: !!providerId,
     staleTime: 30 * 60 * 1000,
+  });
+}
+
+/** Prix exact via pokemontcg.io (lazy, à l'ouverture de la modal). */
+export function usePokemontcgPrice(card: CardRecord | undefined) {
+  return useQuery({
+    queryKey: ["price", "ptcg", card?.id],
+    queryFn: () =>
+      fetchPokemontcgPricing({
+        name: card!.name,
+        number: card!.number,
+        setName: card!.setName,
+      }),
+    enabled: !!card,
+    staleTime: 6 * 60 * 60 * 1000,
+    retry: 0,
   });
 }
 
