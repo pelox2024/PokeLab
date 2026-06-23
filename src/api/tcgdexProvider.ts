@@ -8,7 +8,7 @@
  * - les IDs sont identiques entre langues -> recherche bilingue EN/FR par fusion.
  */
 
-import { cardmarketSearchUrl, resolveFoilStyle } from "../lib/foil";
+import { cardmarketSearchUrl, isFullArtRarity, resolveFoilStyle } from "../lib/foil";
 import type {
   Ability,
   Attack,
@@ -155,6 +155,10 @@ interface TcgdexCmPricing {
   avg7?: number;
   avg30?: number;
   "avg-holo"?: number | null;
+  "low-holo"?: number | null;
+  "trend-holo"?: number | null;
+  "avg7-holo"?: number | null;
+  "avg30-holo"?: number | null;
 }
 
 async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
@@ -226,6 +230,13 @@ function mapPricing(c: TcgdexCard, searchName: string): CardPricing[] | undefine
   const cm = c.pricing?.cardmarket;
   if (!cm) return undefined;
   const currency = cm.unit === "EUR" ? "EUR" : cm.unit === "USD" ? "USD" : "EUR";
+
+  // Garde de plausibilité : TCGdex lie parfois une carte full-art au produit
+  // de la version commune -> prix plancher (~0,02 €) absurde pour une SIR.
+  const fullCard = isFullArtRarity(c.rarity);
+  const looksLikeBaseFloor = (cm.low ?? 1) <= 0.05 && (cm.avg ?? 99) < 2;
+  const confidence: CardPricing["confidence"] = fullCard && looksLikeBaseFloor ? "low" : "high";
+
   const entry: CardPricing = {
     provider: "cardmarket",
     currency,
@@ -234,9 +245,14 @@ function mapPricing(c: TcgdexCard, searchName: string): CardPricing[] | undefine
     trend: cm.trend ?? undefined,
     avg7: cm.avg7 ?? undefined,
     avg30: cm.avg30 ?? undefined,
+    holoLow: cm["low-holo"] ?? undefined,
     holoAvg: cm["avg-holo"] ?? undefined,
+    holoTrend: cm["trend-holo"] ?? undefined,
+    holoAvg7: cm["avg7-holo"] ?? undefined,
+    holoAvg30: cm["avg30-holo"] ?? undefined,
     updatedAt: cm.updated,
-    sourceUrl: cardmarketSearchUrl(searchName),
+    sourceUrl: cardmarketSearchUrl(searchName, c.set?.name),
+    confidence,
   };
   // Au moins une valeur de prix utile.
   if (entry.avg == null && entry.low == null && entry.trend == null) return undefined;

@@ -3,7 +3,7 @@
 Application web premium, **card-first**, pour explorer les cartes Pokémon TCG et
 construire des decks. Interface française, dark mode / glassmorphism, avec une direction artistique « finance app / Apple dark glass ».
 
-> État actuel : **Phase 1 / Lot 2.5 — Polish premium du Card Explorer**.
+> État actuel : **Phase 1 / Lot 2.6 — Card Experience Quality Pass**.
 
 Vision compagnon : Explorer → Construire → **Collectionner → Compléter (prix/Cardmarket)** → Wishlist → Méta. Les types `CardPricing` / `CollectionItem` / `Binder` / `WishlistItem` / `DeckCompletion` sont préparés (architecture), sans interface en V1.
 

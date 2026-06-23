@@ -55,9 +55,18 @@ export interface CardPricing {
   trend?: number;
   avg7?: number;
   avg30?: number;
+  holoLow?: number;
   holoAvg?: number;
+  holoTrend?: number;
+  holoAvg7?: number;
+  holoAvg30?: number;
   updatedAt?: string;
   sourceUrl?: string;
+  /**
+   * Fiabilité de la donnée. "low" quand le prix semble mal lié (ex: carte
+   * full-art renvoyant le prix plancher de la version commune via TCGdex).
+   */
+  confidence?: "low" | "medium" | "high";
 }
 
 /** Carte normalisée — voir §11 du brief. */

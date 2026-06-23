@@ -20,6 +20,7 @@ interface CardGridProps {
   onReachEnd?: () => void;
   skeletonCount?: number;
   size?: GridSize;
+  rarityHint?: string;
 }
 
 export function CardGrid({
@@ -29,6 +30,7 @@ export function CardGrid({
   onReachEnd,
   skeletonCount = 0,
   size = "normal",
+  rarityHint,
 }: CardGridProps) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -65,7 +67,7 @@ export function CardGrid({
     <>
       <div className={styles.grid} style={gridStyle}>
         {cards.map((card) => (
-          <CardTile key={card.id} card={card} onClick={onCardClick} />
+          <CardTile key={card.id} card={card} onClick={onCardClick} rarityHint={rarityHint} />
         ))}
       </div>
       {loadingMore && (

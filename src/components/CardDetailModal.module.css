@@ -349,6 +349,21 @@
   gap: 10px;
 }
 
+.priceSub {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.priceWarn {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--warning);
+  line-height: 1.5;
+}
+
 .priceCell {
   display: flex;
   flex-direction: column;

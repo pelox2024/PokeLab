@@ -1,19 +1,61 @@
 import type { CardPricing, CardRecord, CardVariants, FoilStyle } from "../api/types";
 
-/** Raretés considérées comme "spéciales" (effet foil pertinent). */
-export function isSpecialRarity(rarity?: string): boolean {
-  if (!rarity) return false;
-  return /holo|illustration|special|hyper|secret|gold|rainbow|shiny|amazing|radiant|double rare|ultra|prism|crown|trainer gallery/i.test(
-    rarity,
-  );
-}
+/* ============================================================
+   Détection des raretés
+   ============================================================ */
 
-/** Raretés "pleine carte" (full art / illustration / hyper / gold / rainbow…). */
+/** Raretés "pleine carte" (full art / SIR / hyper / rainbow / chase…). */
+const FULL_CARD_RARITY_PATTERNS: RegExp[] = [
+  /illustration rare/i, // "Illustration rare" + "Special illustration rare"
+  /special art/i,
+  /\bart rare\b/i,
+  /hyper/i,
+  /secret/i,
+  /rainbow/i,
+  /gold/i,
+  /black\s*&?\s*white rare/i, // "Black White Rare"
+  /white flare/i,
+  /black bolt/i,
+  /shiny ultra/i,
+  /shiny rare/i,
+  /trainer gallery/i,
+  /galarian gallery/i,
+  /crown/i,
+  /amazing/i,
+  /ultra rare/i, // modern: full-art V / VMAX / supporters
+  /\bSAR\b/,
+  /\bSIR\b/,
+  /\bCHR\b/,
+  /\bCSR\b/,
+  /\bAR\b/,
+];
+
+/** Raretés "holo classique" : brillance dans la zone d'illustration. */
+const ARTBOX_HOLO_RARITY_PATTERNS: RegExp[] = [
+  /rare holo/i,
+  /\bholo\b/i,
+  /double rare/i,
+  /radiant/i,
+  /prism/i,
+  /prime/i,
+];
+
+/** Suffixes Pokémon modernes qui sont généralement holo (mais pas full-art). */
+const HOLO_SUFFIX = /^(ex|gx|v|vmax|vstar|v-union)$/i;
+
 export function isFullArtRarity(rarity?: string): boolean {
   if (!rarity) return false;
-  return /illustration rare|special illustration|hyper|rainbow|gold|secret|amazing|crown|trainer gallery|ultra/i.test(
-    rarity,
-  );
+  return FULL_CARD_RARITY_PATTERNS.some((re) => re.test(rarity));
+}
+
+function isArtboxHoloRarity(rarity?: string): boolean {
+  if (!rarity) return false;
+  return ARTBOX_HOLO_RARITY_PATTERNS.some((re) => re.test(rarity));
+}
+
+/** Raretés considérées comme "spéciales" (un effet foil est pertinent). */
+export function isSpecialRarity(rarity?: string): boolean {
+  return isFullArtRarity(rarity) || isArtboxHoloRarity(rarity);
 }
 
 const KNOWN_FOIL_STYLES = new Set<FoilStyle>([
@@ -26,21 +68,21 @@ const KNOWN_FOIL_STYLES = new Set<FoilStyle>([
   "mirror",
 ]);
 
-/** Détermine le style de foil d'une carte à partir de ses données complètes. */
+/** Style de foil de base (compat héritée). */
 export function resolveFoilStyle(opts: {
   foil?: string | null;
   rarity?: string;
   variants?: CardVariants;
 }): { foilStyle: FoilStyle; hasFoilEffect: boolean } {
   const { foil, rarity, variants } = opts;
-
   if (foil && KNOWN_FOIL_STYLES.has(foil as FoilStyle)) {
     return { foilStyle: foil as FoilStyle, hasFoilEffect: true };
   }
-  if (isSpecialRarity(rarity)) {
-    return { foilStyle: "holo", hasFoilEffect: true };
+  if (isFullArtRarity(rarity)) {
+    const style: FoilStyle = /rainbow|gold|secret|hyper/i.test(rarity ?? "") ? "rainbow" : "holo";
+    return { foilStyle: style, hasFoilEffect: true };
   }
-  if (variants?.holo) {
+  if (variants?.holo || isArtboxHoloRarity(rarity)) {
     return { foilStyle: "holo", hasFoilEffect: true };
   }
   if (variants?.reverse) {
@@ -49,71 +91,136 @@ export function resolveFoilStyle(opts: {
   return { foilStyle: "none", hasFoilEffect: false };
 }
 
-/**
- * Heuristique pour la grille : les briefs TCGdex ne contiennent ni rareté ni
- * variants. On déduit donc un foil probable depuis le suffixe du nom
- * (ex, V, VMAX, VSTAR, GX…) — sans appel détail supplémentaire.
- */
-const SPECIAL_NAME = /(\bex\b|\bGX\b|\bV\b|\bVMAX\b|\bVSTAR\b|V-UNION|\bBREAK\b|Radiant|Prime|LEGEND|\bStar\b)/;
+/* ============================================================
+   Layouts d'artbox (géométrie de la zone d'illustration)
+   ============================================================ */
 
-export function inferFoilFromName(name: string): FoilStyle {
-  return SPECIAL_NAME.test(name) ? "holo" : "none";
+export type CardLayout = "modern-pokemon" | "legacy-pokemon" | "trainer" | "full-art";
+
+export interface LayoutDims {
+  top: string;
+  left: string;
+  right: string;
+  height: string;
+}
+
+export const CARD_LAYOUTS: Record<CardLayout, LayoutDims> = {
+  "modern-pokemon": { top: "14%", left: "7%", right: "7%", height: "36%" },
+  "legacy-pokemon": { top: "13%", left: "8%", right: "8%", height: "34%" },
+  trainer: { top: "12%", left: "7%", right: "7%", height: "45%" },
+  "full-art": { top: "0%", left: "0%", right: "0%", height: "100%" },
+};
+
+export function getLayoutDims(layout: CardLayout): LayoutDims {
+  return CARD_LAYOUTS[layout];
 }
 
 /* ============================================================
-   Présentation du foil par ZONE (Pokémon TCG)
-   - artbox  : brillance concentrée sur l'illustration (holo classique)
-   - reverse : brillance autour de l'illustration, pas sur l'artwork
-   - full    : brillance sur toute la carte (full art / SIR / rainbow…)
+   Traitement visuel d'une carte
    ============================================================ */
 
 export type FoilZone = "none" | "artbox" | "reverse" | "full";
 
-export interface FoilPresentation {
-  zone: FoilZone;
-  style: FoilStyle;
+export interface CardVisualTreatment {
+  foilZone: FoilZone;
+  foilStyle: FoilStyle;
+  layout: CardLayout;
+  confidence: "low" | "medium" | "high";
+  reason?: string;
 }
 
-type FoilInput = Partial<
-  Pick<CardRecord, "rarity" | "variants" | "suffix" | "foil" | "category">
+type VisualInput = Partial<
+  Pick<CardRecord, "rarity" | "variants" | "suffix" | "foil" | "category" | "regulationMark">
 > & { name?: string; displayName?: string };
 
-/** Détermine zone + style d'un effet foil. Tolère des données partielles (grille). */
-export function getFoilPresentation(card: FoilInput): FoilPresentation {
-  const hasDetailedData = !!card.rarity || !!card.variants || !!card.foil;
+function pickLayout(card: VisualInput, full: boolean): CardLayout {
+  if (full) return "full-art";
+  if (card.category === "Trainer") return "trainer";
+  // Heuristique moderne vs ancien : le regulation mark n'existe que depuis ~2019.
+  if (card.category === "Pokemon") {
+    return card.regulationMark ? "modern-pokemon" : "legacy-pokemon";
+  }
+  return "modern-pokemon";
+}
 
-  // Grille (brief) : pas de rareté/variants -> heuristique sur le nom.
-  if (!hasDetailedData) {
-    const name = card.displayName || card.name || "";
-    return SPECIAL_NAME.test(name)
-      ? { zone: "artbox", style: "holo" }
-      : { zone: "none", style: "none" };
+/**
+ * Détermine où et comment appliquer la brillance d'une carte.
+ * Tolère des données partielles : sans rareté/variants (grille), la confiance
+ * tombe à "low" et aucun effet précis n'est appliqué.
+ */
+export function getCardVisualTreatment(card: VisualInput): CardVisualTreatment {
+  const hasData = !!card.rarity || !!card.variants || !!card.foil;
+
+  // Grille (brief) : données insuffisantes -> pas d'effet précis.
+  if (!hasData) {
+    return {
+      foilZone: "none",
+      foilStyle: "none",
+      layout: "modern-pokemon",
+      confidence: "low",
+      reason: "Données insuffisantes (brief)",
+    };
   }
 
-  // Full art / illustration / hyper / rainbow / gold…
+  // 1) Full-card (full art / SIR / hyper / rainbow / black-white rare…)
   if (isFullArtRarity(card.rarity)) {
     const style: FoilStyle = /rainbow|gold|secret|hyper/i.test(card.rarity ?? "")
       ? "rainbow"
       : "holo";
-    return { zone: "full", style };
+    return {
+      foilZone: "full",
+      foilStyle: style,
+      layout: "full-art",
+      confidence: "high",
+      reason: `Rareté full-card: ${card.rarity}`,
+    };
   }
 
-  // Foil "exotique" connu (cosmos, galaxy…) -> pleine carte.
+  // 2) Foil exotique connu (cosmos, galaxy…) -> pleine carte
   if (card.foil && KNOWN_FOIL_STYLES.has(card.foil as FoilStyle)) {
-    return { zone: "full", style: card.foil as FoilStyle };
+    return {
+      foilZone: "full",
+      foilStyle: card.foil as FoilStyle,
+      layout: "full-art",
+      confidence: "high",
+      reason: `Foil: ${card.foil}`,
+    };
   }
 
-  // Holo classique (double rare / ex holo / rare holo) -> zone illustration.
-  if (card.variants?.holo || /holo/i.test(card.rarity ?? "")) {
-    return { zone: "artbox", style: "holo" };
+  // 3) Holo classique -> zone d'illustration
+  const suffixHolo = card.suffix ? HOLO_SUFFIX.test(card.suffix) : false;
+  if (card.variants?.holo || isArtboxHoloRarity(card.rarity) || suffixHolo) {
+    return {
+      foilZone: "artbox",
+      foilStyle: "holo",
+      layout: pickLayout(card, false),
+      confidence: "high",
+      reason: card.variants?.holo
+        ? "variants.holo"
+        : suffixHolo
+          ? `Suffixe ${card.suffix}`
+          : `Rareté holo: ${card.rarity}`,
+    };
   }
 
-  // Reverse holo -> pourtour, pas l'illustration.
+  // 4) Reverse holo -> pourtour, hors illustration
   if (card.variants?.reverse) {
-    return { zone: "reverse", style: "reverse" };
+    return {
+      foilZone: "reverse",
+      foilStyle: "reverse",
+      layout: pickLayout(card, false),
+      confidence: "high",
+      reason: "variants.reverse",
+    };
   }
 
-  return { zone: "none", style: "none" };
+  return {
+    foilZone: "none",
+    foilStyle: "none",
+    layout: pickLayout(card, false),
+    confidence: "high",
+    reason: "Carte normale",
+  };
 }
 
 /* ============================================================
@@ -125,8 +232,9 @@ export function pickCardmarket(pricing?: CardPricing[]): CardPricing | undefined
 }
 
 /** Lien de recherche Cardmarket (pas d'API privée, juste une recherche). */
-export function cardmarketSearchUrl(name: string): string {
+export function cardmarketSearchUrl(name: string, setName?: string): string {
+  const q = setName ? `${name} ${setName}` : name;
   return `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(
-    name,
+    q,
   )}`;
 }

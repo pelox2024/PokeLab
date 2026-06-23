@@ -64,6 +64,8 @@ export const fr = {
     inCollectionSoon: "Dans ma collection : bientôt",
     price: "Prix",
     priceUnavailable: "Prix indisponible",
+    priceUnreliable:
+      "Prix de marché peu fiable pour cette version (données de base). Vérifiez sur Cardmarket.",
     priceLow: "Bas",
     priceTrend: "Tendance",
     priceAvg: "Moyen",

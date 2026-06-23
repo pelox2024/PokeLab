@@ -1,8 +1,4 @@
-/* Géométrie approximative de l'artbox d'une carte Pokémon moderne */
 .reverseGroup {
-  --art-top: 14%;
-  --art-side: 7%;
-  --art-h: 36%;
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -11,7 +7,7 @@
 .layer {
   position: absolute;
   pointer-events: none;
-  opacity: calc(var(--foil-opacity, 0) * 0.6);
+  opacity: calc(var(--foil-opacity, 0) * 0.6 * var(--foil-strength, 1));
   transition: opacity var(--t-med);
   mix-blend-mode: color-dodge;
   border-radius: 10px;
@@ -45,7 +41,7 @@
 }
 
 .reverse {
-  opacity: calc(var(--foil-opacity, 0) * 0.42);
+  opacity: calc(var(--foil-opacity, 0) * 0.42 * var(--foil-strength, 1));
   background: repeating-linear-gradient(
     115deg,
     rgba(255, 255, 255, 0.05) 0px,
@@ -58,39 +54,39 @@
   mix-blend-mode: screen;
 }
 
-/* --- Zones --- */
+/* --- Zones (géométrie pilotée par --art-*) --- */
 .full {
   inset: 0;
 }
 
 .artbox {
-  top: 14%;
-  left: 7%;
-  right: 7%;
-  height: 36%;
+  top: var(--art-top, 14%);
+  left: var(--art-left, 7%);
+  right: var(--art-right, 7%);
+  height: var(--art-height, 36%);
 }
 
 .rvTop {
   top: 0;
   left: 0;
   right: 0;
-  height: var(--art-top);
+  height: var(--art-top, 14%);
 }
 .rvBottom {
-  top: calc(var(--art-top) + var(--art-h));
+  top: calc(var(--art-top, 14%) + var(--art-height, 36%));
   left: 0;
   right: 0;
   bottom: 0;
 }
 .rvLeft {
-  top: var(--art-top);
+  top: var(--art-top, 14%);
   left: 0;
-  width: var(--art-side);
-  height: var(--art-h);
+  width: var(--art-left, 7%);
+  height: var(--art-height, 36%);
 }
 .rvRight {
-  top: var(--art-top);
+  top: var(--art-top, 14%);
   right: 0;
-  width: var(--art-side);
-  height: var(--art-h);
+  width: var(--art-right, 7%);
+  height: var(--art-height, 36%);
 }

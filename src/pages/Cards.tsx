@@ -137,6 +137,7 @@ export function Cards() {
         <CardGrid
           cards={cards}
           size={size}
+          rarityHint={filters.rarity}
           onCardClick={(c) => setSelected(c.providerId)}
           loadingMore={isFetchingNextPage}
           onReachEnd={() => {

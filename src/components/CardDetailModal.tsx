@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { CardRecord } from "../api/types";
 import { useCardDetail } from "../hooks/useCards";
 import { useFoilHover } from "../hooks/useFoilHover";
-import { cardmarketSearchUrl, getFoilPresentation, pickCardmarket } from "../lib/foil";
+import { cardmarketSearchUrl, getCardVisualTreatment, pickCardmarket } from "../lib/foil";
 import { TYPE_COLORS } from "../lib/filters";
 import { fr } from "../lib/i18n";
 import { Modal } from "./ui/Modal";
@@ -62,8 +62,8 @@ function StatRow({ label, value }: { label: string; value?: ReactNode }) {
 }
 
 function FoilImage({ card }: { card: CardRecord }) {
-  const presentation = getFoilPresentation(card);
-  const special = presentation.zone !== "none";
+  const treatment = getCardVisualTreatment(card);
+  const special = treatment.foilZone !== "none";
   const { ref, onPointerMove, onPointerLeave } = useFoilHover<HTMLDivElement>({
     tilt: true,
     glare: special,
@@ -88,7 +88,7 @@ function FoilImage({ card }: { card: CardRecord }) {
         )}
         {special && card.imageUrl && (
           <>
-            <FoilOverlay zone={presentation.zone} style={presentation.style} />
+            <FoilOverlay treatment={treatment} />
             <span className={styles.glare} />
           </>
         )}
@@ -118,8 +118,17 @@ function CopyButton({ label, value, icon }: { label: string; value: string; icon
 
 function PriceBlock({ card }: { card: CardRecord }) {
   const cm = pickCardmarket(card.pricing);
+  const cmLink = cm?.sourceUrl ?? cardmarketSearchUrl(card.name, card.setName);
   const fmt = (n?: number) => (n != null ? `${n.toFixed(2)} ${cm?.currency ?? "EUR"}` : fr.detail.none);
 
+  const CardmarketLink = (
+    <a className={styles.cmLink} href={cmLink} target="_blank" rel="noopener noreferrer">
+      {fr.detail.viewCardmarket}
+      <Icon name="spark" size={14} />
+    </a>
+  );
+
+  // Aucune donnée de prix.
   if (!cm) {
     return (
       <section className={styles.priceBlock}>
@@ -127,20 +136,27 @@ function PriceBlock({ card }: { card: CardRecord }) {
           <h3 className={styles.sectionTitle}>{fr.detail.price}</h3>
           <span className={styles.priceUnavailable}>{fr.detail.priceUnavailable}</span>
         </div>
-        <a
-          className={styles.cmLink}
-          href={cardmarketSearchUrl(card.name)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {fr.detail.viewCardmarket}
-          <Icon name="spark" size={14} />
-        </a>
+        {CardmarketLink}
+      </section>
+    );
+  }
+
+  // Donnée peu fiable (TCGdex renvoie le prix de base pour une version alt).
+  if (cm.confidence === "low") {
+    return (
+      <section className={styles.priceBlock}>
+        <div className={styles.priceHead}>
+          <h3 className={styles.sectionTitle}>{fr.detail.price}</h3>
+          <span className={styles.cmTag}>Cardmarket</span>
+        </div>
+        <p className={styles.priceWarn}>{fr.detail.priceUnreliable}</p>
+        {CardmarketLink}
       </section>
     );
   }
 
   const date = cm.updatedAt ? new Date(cm.updatedAt).toLocaleDateString("fr-FR") : undefined;
+  const hasHolo = cm.holoAvg != null || cm.holoLow != null || cm.holoTrend != null;
 
   return (
     <section className={styles.priceBlock}>
@@ -148,6 +164,7 @@ function PriceBlock({ card }: { card: CardRecord }) {
         <h3 className={styles.sectionTitle}>{fr.detail.price}</h3>
         <span className={styles.cmTag}>Cardmarket</span>
       </div>
+
       <div className={styles.priceGrid}>
         <div className={styles.priceCell}>
           <span className={styles.priceLabel}>{fr.detail.priceLow}</span>
@@ -161,23 +178,32 @@ function PriceBlock({ card }: { card: CardRecord }) {
           <span className={styles.priceLabel}>{fr.detail.priceAvg}</span>
           <span className={styles.priceValue}>{fmt(cm.avg)}</span>
         </div>
-        {cm.holoAvg != null && (
-          <div className={styles.priceCell}>
-            <span className={styles.priceLabel}>{fr.detail.priceHolo}</span>
-            <span className={styles.priceValue}>{fmt(cm.holoAvg)}</span>
-          </div>
-        )}
       </div>
+
+      {hasHolo && (
+        <>
+          <span className={styles.priceSub}>{fr.detail.priceHolo}</span>
+          <div className={styles.priceGrid}>
+            <div className={styles.priceCell}>
+              <span className={styles.priceLabel}>{fr.detail.priceLow}</span>
+              <span className={styles.priceValue}>{fmt(cm.holoLow)}</span>
+            </div>
+            <div className={styles.priceCell}>
+              <span className={styles.priceLabel}>{fr.detail.priceTrend}</span>
+              <span className={[styles.priceValue, styles.priceTrend].join(" ")}>
+                {fmt(cm.holoTrend)}
+              </span>
+            </div>
+            <div className={styles.priceCell}>
+              <span className={styles.priceLabel}>{fr.detail.priceAvg}</span>
+              <span className={styles.priceValue}>{fmt(cm.holoAvg)}</span>
+            </div>
+          </div>
+        </>
+      )}
+
       <div className={styles.priceFooter}>
-        <a
-          className={styles.cmLink}
-          href={cm.sourceUrl ?? cardmarketSearchUrl(card.name)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {fr.detail.viewCardmarket}
-          <Icon name="spark" size={14} />
-        </a>
+        {CardmarketLink}
         {date && <span className={styles.priceDate}>{fr.detail.priceUpdated(date)}</span>}
       </div>
     </section>

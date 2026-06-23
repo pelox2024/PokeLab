@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
-import type { CardBrief } from "../api/types";
-import { getFoilPresentation } from "../lib/foil";
+import type { CSSProperties } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { CardBrief, CardRecord, FoilStyle } from "../api/types";
+import { getCardVisualTreatment, isFullArtRarity } from "../lib/foil";
+import type { CardVisualTreatment } from "../lib/foil";
 import { useFoilHover } from "../hooks/useFoilHover";
 import { FoilOverlay } from "./ui/FoilOverlay";
 import { Icon } from "./ui/Icon";
@@ -9,23 +12,45 @@ import styles from "./CardTile.module.css";
 interface CardTileProps {
   card: CardBrief;
   onClick?: (card: CardBrief) => void;
+  /** Rareté du filtre actif : si full-card, on peut appliquer un foil léger. */
+  rarityHint?: string;
 }
 
-export function CardTile({ card, onClick }: CardTileProps) {
+export function CardTile({ card, onClick, rarityHint }: CardTileProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Brief : pas de rareté/variants -> présentation déduite du nom.
-  const presentation = useMemo(
-    () => getFoilPresentation({ name: card.name, displayName: card.displayName }),
-    [card.name, card.displayName],
-  );
-  const special = presentation.zone !== "none";
+  // Enrichissement progressif : si la carte a déjà été ouverte (cache détail),
+  // on applique le traitement précis. Aucun appel réseau supplémentaire.
+  const treatment = useMemo<CardVisualTreatment>(() => {
+    const cached = queryClient.getQueryData<CardRecord>(["cards", "detail", card.providerId]);
+    if (cached) return getCardVisualTreatment(cached);
+    if (rarityHint && isFullArtRarity(rarityHint)) {
+      const style: FoilStyle = /rainbow|gold|secret|hyper/i.test(rarityHint) ? "rainbow" : "holo";
+      return {
+        foilZone: "full",
+        foilStyle: style,
+        layout: "full-art",
+        confidence: "medium",
+        reason: "Filtre rareté full-card",
+      };
+    }
+    // Brief seul : pas d'effet précis (confiance trop faible).
+    return getCardVisualTreatment({ name: card.name, displayName: card.displayName });
+  }, [queryClient, card.providerId, card.name, card.displayName, rarityHint]);
+
+  const special = treatment.foilZone !== "none";
+  const showFallback = !card.imageUrl || errored;
 
   const { ref, onPointerMove, onPointerLeave } = useFoilHover<HTMLDivElement>({
     tilt: true,
     glare: special,
   });
+
+  const frameStyle = {
+    ["--foil-strength" as string]: special && treatment.confidence === "high" ? 1 : 0.5,
+  } as CSSProperties;
 
   const alias = card.searchAliases?.[0];
 
@@ -35,11 +60,12 @@ export function CardTile({ card, onClick }: CardTileProps) {
         <div
           ref={ref}
           className={[styles.frame, special ? styles.special : ""].filter(Boolean).join(" ")}
+          style={frameStyle}
           onPointerMove={onPointerMove}
           onPointerLeave={onPointerLeave}
         >
-          {!loaded && !errored && <span className={styles.shimmer} />}
-          {card.imageUrl && !errored ? (
+          {!loaded && !showFallback && <span className={styles.shimmer} />}
+          {!showFallback && (
             <img
               className={[styles.img, loaded ? styles.imgLoaded : ""].filter(Boolean).join(" ")}
               src={card.imageUrl}
@@ -49,9 +75,9 @@ export function CardTile({ card, onClick }: CardTileProps) {
               onLoad={() => setLoaded(true)}
               onError={() => setErrored(true)}
             />
-          ) : null}
+          )}
 
-          {errored && (
+          {showFallback && (
             <div className={styles.fallback}>
               <span className={styles.fbIcon}>
                 <Icon name="cards" size={26} />
@@ -62,9 +88,9 @@ export function CardTile({ card, onClick }: CardTileProps) {
             </div>
           )}
 
-          {loaded && !errored && special && (
+          {loaded && !showFallback && special && (
             <>
-              <FoilOverlay zone={presentation.zone} style={presentation.style} />
+              <FoilOverlay treatment={treatment} />
               <span className={styles.glare} />
             </>
           )}
