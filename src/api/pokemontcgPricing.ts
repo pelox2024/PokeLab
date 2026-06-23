@@ -44,6 +44,39 @@ export interface PokemontcgQuery {
   setName?: string;
 }
 
+/** pokemontcg n'utilise pas de zéros de tête (TCGdex pad: "004" -> "4"). */
+function normalizeNumber(num?: string): string | undefined {
+  if (!num) return undefined;
+  if (/^\d+$/.test(num)) return String(parseInt(num, 10));
+  return num; // alphanumérique (promos: SWSH251, TG24…) inchangé
+}
+
+async function queryCards(q: string): Promise<PtcgCard[]> {
+  try {
+    const res = await fetch(`${BASE}?q=${encodeURIComponent(q)}&pageSize=20`);
+    if (!res.ok) return [];
+    const json = (await res.json()) as { data?: PtcgCard[] };
+    return json.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+function pickBySet(cards: PtcgCard[], setName?: string, number?: string): PtcgCard | undefined {
+  if (!cards.length) return undefined;
+  const target = setName?.toLowerCase();
+  let pool = cards;
+  if (target) {
+    const bySet = cards.filter((c) => (c.set?.name ?? "").toLowerCase() === target);
+    if (bySet.length) pool = bySet;
+  }
+  if (number) {
+    const byNum = pool.find((c) => c.number === number);
+    if (byNum) return byNum;
+  }
+  return pool.length === 1 ? pool[0] : target ? pool[0] : undefined;
+}
+
 /**
  * Récupère le prix Cardmarket exact d'une carte via pokemontcg.io.
  * Retourne null si aucune correspondance fiable (on retombera sur TCGdex).
@@ -53,30 +86,18 @@ export async function fetchPokemontcgPricing(
 ): Promise<CardPricing | null> {
   const name = escapeLucene(query.name).trim();
   if (!name) return null;
+  const number = normalizeNumber(query.number);
 
-  const parts = [`name:"${name}"`];
-  if (query.number) parts.push(`number:${escapeLucene(query.number)}`);
-  const q = parts.join(" ");
+  // 1) nom + numéro normalisé
+  let cards: PtcgCard[] = [];
+  if (number) cards = await queryCards(`name:"${name}" number:${escapeLucene(number)}`);
+  let card = pickBySet(cards, query.setName, number);
 
-  const url = `${BASE}?q=${encodeURIComponent(q)}&pageSize=12`;
-  let cards: PtcgCard[];
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const json = (await res.json()) as { data?: PtcgCard[] };
-    cards = json.data ?? [];
-  } catch {
-    return null;
+  // 2) repli : nom seul, on filtre par extension (+ numéro si possible)
+  if (!card) {
+    cards = await queryCards(`name:"${name}"`);
+    card = pickBySet(cards, query.setName, number);
   }
-  if (!cards.length) return null;
-
-  // Match prioritaire sur l'extension (nom de set), sinon résultat unique.
-  let card: PtcgCard | undefined;
-  if (query.setName) {
-    const target = query.setName.toLowerCase();
-    card = cards.find((c) => (c.set?.name ?? "").toLowerCase() === target);
-  }
-  if (!card && cards.length === 1) card = cards[0];
   if (!card) return null;
 
   const cm = card.cardmarket;

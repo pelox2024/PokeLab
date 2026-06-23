@@ -15,7 +15,9 @@
   position: relative;
   width: 100%;
   max-width: 640px;
-  max-height: 90vh;
+  /* dvh = hauteur visible réelle (tient compte de la barre d'URL mobile) */
+  max-height: 85vh;
+  max-height: 85dvh;
   display: flex;
   flex-direction: column;
   background: var(--surface-strong);
@@ -36,6 +38,7 @@
 }
 
 .grabber {
+  flex-shrink: 0;
   width: 40px;
   height: 4px;
   border-radius: var(--radius-pill);
@@ -44,6 +47,7 @@
 }
 
 .head {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -77,6 +81,7 @@
 }
 
 .footer {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;

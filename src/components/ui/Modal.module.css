@@ -64,7 +64,8 @@
     align-items: flex-end;
   }
   .dialog {
-    max-height: 92vh;
+    max-height: 90vh;
+    max-height: 90dvh;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
   }
