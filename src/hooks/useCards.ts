@@ -1,19 +1,21 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { activeProvider } from "../api/cardApi";
-import type { CardPage } from "../api/types";
+import type { CardFilters, CardPage, SortKey } from "../api/types";
 
 const PAGE_SIZE = 40;
 
 /**
- * Recherche paginée (infinite scroll) des cartes.
+ * Recherche paginée (infinite scroll) des cartes, avec filtres et tri.
  * La requête est conservée en cache par TanStack Query.
  */
-export function useCardSearch(search: string) {
+export function useCardSearch(search: string, filters: CardFilters, sort: SortKey) {
   return useInfiniteQuery<CardPage>({
-    queryKey: ["cards", "search", search],
+    queryKey: ["cards", "search", search, filters, sort],
     queryFn: ({ pageParam }) =>
       activeProvider.searchCards({
         search,
+        filters,
+        sort,
         page: pageParam as number,
         pageSize: PAGE_SIZE,
       }),
@@ -23,12 +25,21 @@ export function useCardSearch(search: string) {
   });
 }
 
-/** Détail d'une carte (chargé à l'ouverture du modal — lazy). */
+/** Détail d'une carte (chargé à l'ouverture du modal — lazy, bilingue). */
 export function useCardDetail(providerId: string | null) {
   return useQuery({
     queryKey: ["cards", "detail", providerId],
     queryFn: () => activeProvider.getCard(providerId as string),
     enabled: !!providerId,
     staleTime: 30 * 60 * 1000,
+  });
+}
+
+/** Liste des extensions (sets) pour le filtre — cache long. */
+export function useSets() {
+  return useQuery({
+    queryKey: ["sets"],
+    queryFn: () => activeProvider.getSets(),
+    staleTime: 24 * 60 * 60 * 1000,
   });
 }

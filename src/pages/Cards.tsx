@@ -1,18 +1,25 @@
 import { useMemo, useState } from "react";
-import { useCardSearch } from "../hooks/useCards";
+import { useCardSearch, useSets } from "../hooks/useCards";
 import { useDebounce } from "../lib/useDebounce";
 import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
+import { FilterBar } from "../components/FilterBar";
+import { CardDetailModal } from "../components/CardDetailModal";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Icon } from "../components/ui/Icon";
-import type { CardBrief } from "../api/types";
+import type { CardBrief, CardFilters, SortKey } from "../api/types";
 import styles from "./Cards.module.css";
 
 export function Cards() {
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<CardFilters>({});
+  const [sort, setSort] = useState<SortKey>("name-asc");
+  const [selected, setSelected] = useState<string | null>(null);
+
   const debounced = useDebounce(search, 350);
+  const { data: sets } = useSets();
 
   const {
     data,
@@ -22,17 +29,12 @@ export function Cards() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useCardSearch(debounced);
+  } = useCardSearch(debounced, filters, sort);
 
   const cards: CardBrief[] = useMemo(
     () => data?.pages.flatMap((p) => p.items) ?? [],
     [data],
   );
-
-  const handleCardClick = (card: CardBrief) => {
-    // Le modal détail arrive au lot 2 ; on log pour l'instant.
-    console.info("Carte sélectionnée:", card.name, card.providerId);
-  };
 
   return (
     <div className={styles.page}>
@@ -56,15 +58,20 @@ export function Cards() {
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
           />
-          <Button variant="ghost" size="md" iconLeft={<Icon name="sort" size={18} />}>
-            Trier
-          </Button>
         </div>
+
+        <FilterBar
+          filters={filters}
+          onChange={setFilters}
+          sort={sort}
+          onSortChange={setSort}
+          sets={sets}
+        />
 
         {!isLoading && !isError && cards.length > 0 && (
           <div className={styles.countRow}>
-            <span className={styles.count}>{fr.cards.resultsCount(cards.length)}</span>
-            {hasNextPage && <span className={styles.more}>· faites défiler pour en voir plus</span>}
+            <span className={styles.count}>{fr.cards.shown(cards.length)}</span>
+            {hasNextPage && <span className={styles.more}>· {fr.cards.scrollMore}</span>}
           </div>
         )}
       </header>
@@ -92,13 +99,15 @@ export function Cards() {
       ) : (
         <CardGrid
           cards={cards}
-          onCardClick={handleCardClick}
+          onCardClick={(c) => setSelected(c.providerId)}
           loadingMore={isFetchingNextPage}
           onReachEnd={() => {
             if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
         />
       )}
+
+      <CardDetailModal providerId={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }

@@ -1,0 +1,71 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(3, 5, 10, 0.66);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeInUp 160ms ease;
+}
+
+.dialog {
+  position: relative;
+  width: 100%;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--surface-strong);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-strong);
+  animation: fadeInUp 200ms ease;
+}
+
+.md {
+  max-width: 520px;
+}
+.lg {
+  max-width: 960px;
+}
+
+.close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  background: rgba(10, 14, 22, 0.6);
+  border: 1px solid var(--border-glass);
+  cursor: pointer;
+  transition:
+    background var(--t-fast),
+    color var(--t-fast);
+}
+
+.close:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+@media (max-width: 720px) {
+  .backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .dialog {
+    max-height: 92vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}

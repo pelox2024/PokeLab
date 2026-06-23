@@ -2,34 +2,53 @@
  * Provider TCGdex (provider principal de la V1).
  * REST, sans clé, multilingue. Doc: https://tcgdex.dev/rest
  *
- * Particularité importante : la liste de cartes renvoie un objet "brief"
- * léger { id, localId, name, image }. Les détails (hp, attaques, faiblesse…)
- * nécessitent un appel sur la carte individuelle -> getCard().
+ * Particularités exploitées :
+ * - la liste renvoie un "brief" léger { id, localId, name, image }. Les détails
+ *   nécessitent un appel par carte -> getCard().
+ * - les IDs sont identiques entre langues -> recherche bilingue EN/FR par fusion.
  */
 
+import { resolveFoilStyle } from "../lib/foil";
 import type {
   Ability,
   Attack,
   CardBrief,
   CardCategory,
+  CardFilters,
+  CardLang,
   CardPage,
   CardProvider,
   CardQuery,
   CardRecord,
+  CardVariants,
   SetInfo,
+  SortKey,
   WeakRes,
 } from "./types";
 
 const PROVIDER_ID = "tcgdex";
 const BASE = "https://api.tcgdex.net/v2";
 
-/** Langue des DONNÉES cartes. EN par défaut (compat imports PTCG Live). */
-let cardLang = "en";
+/** Langue principale d'affichage (préférence utilisateur). EN par défaut. */
+let displayLang: CardLang = "en";
+/** Recherche bilingue activée (cherche EN + FR et fusionne). */
+let bilingualSearch = true;
+
+export function setDisplayLang(lang: CardLang) {
+  displayLang = lang;
+}
+export function setBilingualSearch(enabled: boolean) {
+  bilingualSearch = enabled;
+}
+/** Compat ascendante (Lot 1). */
 export function setCardLang(lang: string) {
-  cardLang = lang;
+  if (lang === "en" || lang === "fr") displayLang = lang;
 }
 
-/** Construit l'URL d'image finale à partir du champ "image" (sans extension). */
+function secondaryLang(): CardLang {
+  return displayLang === "en" ? "fr" : "en";
+}
+
 function imageUrl(image: string | undefined, quality: "high" | "low" = "high"): string | undefined {
   if (!image) return undefined;
   return `${image}/${quality}.webp`;
@@ -48,6 +67,39 @@ function mapCategory(raw: string | undefined): CardCategory {
   }
 }
 
+/** Mapping sous-type UI -> (champ API, valeur). */
+const SUBTYPE_PARAM: Record<string, [string, string]> = {
+  Basic: ["stage", "Basic"],
+  Stage1: ["stage", "Stage1"],
+  Stage2: ["stage", "Stage2"],
+  ex: ["suffix", "ex"],
+  Item: ["trainerType", "Item"],
+  Supporter: ["trainerType", "Supporter"],
+  Stadium: ["trainerType", "Stadium"],
+  Tool: ["trainerType", "Tool"],
+  SpecialEnergy: ["energyType", "Special"],
+};
+
+function applyFilters(params: URLSearchParams, filters?: CardFilters) {
+  if (!filters) return;
+  if (filters.category) params.set("category", filters.category);
+  if (filters.type) params.set("types", filters.type);
+  if (filters.rarity) params.set("rarity", `eq:${filters.rarity}`);
+  if (filters.set) params.set("set", `eq:${filters.set}`);
+  if (filters.regulationMark) params.set("regulationMark", filters.regulationMark);
+  if (filters.standardLegal) params.set("legal.standard", "true");
+  if (filters.subtype) {
+    const map = SUBTYPE_PARAM[filters.subtype];
+    if (map) params.set(map[0], map[1]);
+  }
+}
+
+function sortParams(params: URLSearchParams, sort?: SortKey) {
+  // Seul le tri par "name" est fiable côté serveur sur les briefs TCGdex.
+  params.set("sort:field", "name");
+  params.set("sort:order", sort === "name-desc" ? "DESC" : "ASC");
+}
+
 interface TcgdexBrief {
   id: string;
   localId?: string;
@@ -64,28 +116,68 @@ interface TcgdexCard {
   hp?: number;
   types?: string[];
   stage?: string;
+  suffix?: string;
   trainerType?: string;
   energyType?: string;
   rarity?: string;
   regulationMark?: string;
   retreat?: number;
+  evolveFrom?: string;
+  illustrator?: string;
   attacks?: { name: string; cost?: string[]; damage?: string | number; effect?: string }[];
   abilities?: { name: string; type?: string; effect?: string }[];
   weaknesses?: { type: string; value?: string }[];
   resistances?: { type: string; value?: string }[];
   legal?: { standard?: boolean; expanded?: boolean };
   set?: { id: string; name: string };
+  variants?: {
+    normal?: boolean;
+    reverse?: boolean;
+    holo?: boolean;
+    firstEdition?: boolean;
+    wPromo?: boolean;
+  };
+  variants_detailed?: { type?: string; size?: string }[];
+  foil?: string | null;
 }
 
 async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, { signal });
-  if (!res.ok) {
-    throw new Error(`TCGdex ${res.status} ${res.statusText}`);
-  }
+  if (!res.ok) throw new Error(`TCGdex ${res.status} ${res.statusText}`);
   return (await res.json()) as T;
 }
 
-/** Construit les sous-types lisibles (Basic / Stage 1 / ex / Item / Supporter…). */
+function buildListUrl(lang: CardLang, query: CardQuery, page: number, pageSize: number): string {
+  const params = new URLSearchParams();
+  if (query.search?.trim()) params.set("name", query.search.trim());
+  applyFilters(params, query.filters);
+  params.set("pagination:page", String(page));
+  params.set("pagination:itemsPerPage", String(pageSize));
+  sortParams(params, query.sort);
+  return `${BASE}/${lang}/cards?${params.toString()}`;
+}
+
+async function fetchBriefs(
+  lang: CardLang,
+  query: CardQuery,
+  page: number,
+  pageSize: number,
+): Promise<TcgdexBrief[]> {
+  return fetchJson<TcgdexBrief[]>(buildListUrl(lang, query, page, pageSize));
+}
+
+function buildVariants(c: TcgdexCard): CardVariants | undefined {
+  if (!c.variants) return undefined;
+  const jumbo = c.variants_detailed?.some((v) => v.size === "jumbo");
+  return {
+    normal: c.variants.normal,
+    reverse: c.variants.reverse,
+    holo: c.variants.holo,
+    firstEdition: c.variants.firstEdition,
+    jumbo,
+  };
+}
+
 function buildSubtypes(c: TcgdexCard): string[] {
   const out: string[] = [];
   if (c.stage) out.push(c.stage);
@@ -117,48 +209,144 @@ function mapWeakRes(list?: { type: string; value?: string }[]): WeakRes[] | unde
 export class TcgdexProvider implements CardProvider {
   readonly id = PROVIDER_ID;
 
-  async searchCards(query: CardQuery, signal?: AbortSignal): Promise<CardPage> {
+  async searchCards(query: CardQuery): Promise<CardPage> {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 40;
+    const hasSearch = !!query.search?.trim();
 
-    const params = new URLSearchParams();
-    if (query.search?.trim()) params.set("name", query.search.trim());
-    params.set("pagination:page", String(page));
-    params.set("pagination:itemsPerPage", String(pageSize));
-    params.set("sort:field", "name");
-    params.set("sort:order", "ASC");
+    // Recherche bilingue uniquement quand l'utilisateur tape du texte
+    // (sinon on doublerait inutilement les requêtes en navigation).
+    if (hasSearch && bilingualSearch) {
+      const [primaryRes, secondaryRes] = await Promise.allSettled([
+        fetchBriefs(displayLang, query, page, pageSize),
+        fetchBriefs(secondaryLang(), query, page, pageSize),
+      ]);
 
-    const url = `${BASE}/${cardLang}/cards?${params.toString()}`;
-    const data = await fetchJson<TcgdexBrief[]>(url, signal);
+      const primary = primaryRes.status === "fulfilled" ? primaryRes.value : [];
+      // Si la langue secondaire échoue, on continue avec la principale.
+      const secondary = secondaryRes.status === "fulfilled" ? secondaryRes.value : [];
 
-    const items: CardBrief[] = data.map((b) => ({
+      // Si la principale a échoué mais pas la secondaire, on bascule.
+      if (primaryRes.status === "rejected" && secondaryRes.status === "rejected") {
+        throw primaryRes.reason;
+      }
+
+      const items = this.mergeBilingual(primary, secondary, query.sort);
+      return {
+        items,
+        page,
+        pageSize,
+        hasMore: primary.length === pageSize || secondary.length === pageSize,
+      };
+    }
+
+    const data = await fetchBriefs(displayLang, query, page, pageSize);
+    const items: CardBrief[] = data.map((b) => this.briefFromSingle(b));
+    return { items, page, pageSize, hasMore: data.length === pageSize };
+  }
+
+  private briefFromSingle(b: TcgdexBrief): CardBrief {
+    const nameKey = displayLang === "fr" ? "nameFr" : "nameEn";
+    return {
       id: `${PROVIDER_ID}:${b.id}`,
       provider: PROVIDER_ID,
       providerId: b.id,
       name: b.name,
+      displayName: b.name,
+      [nameKey]: b.name,
       localId: b.localId,
       imageUrl: imageUrl(b.image, "high"),
-    }));
-
-    return {
-      items,
-      page,
-      pageSize,
-      hasMore: data.length === pageSize,
     };
   }
 
-  async getCard(providerId: string, signal?: AbortSignal): Promise<CardRecord> {
-    const url = `${BASE}/${cardLang}/cards/${encodeURIComponent(providerId)}`;
-    const c = await fetchJson<TcgdexCard>(url, signal);
+  /** Fusionne les résultats EN/FR par id et construit les briefs bilingues. */
+  private mergeBilingual(
+    primary: TcgdexBrief[],
+    secondary: TcgdexBrief[],
+    sort?: SortKey,
+  ): CardBrief[] {
+    const isFr = displayLang === "fr";
+    const map = new Map<
+      string,
+      { localId?: string; image?: string; primaryName?: string; secondaryName?: string }
+    >();
+
+    for (const b of primary) {
+      map.set(b.id, { localId: b.localId, image: b.image, primaryName: b.name });
+    }
+    for (const b of secondary) {
+      const existing = map.get(b.id);
+      if (existing) {
+        existing.secondaryName = b.name;
+        if (!existing.image) existing.image = b.image;
+      } else {
+        map.set(b.id, { localId: b.localId, image: b.image, secondaryName: b.name });
+      }
+    }
+
+    const items: CardBrief[] = [];
+    for (const [id, v] of map) {
+      const displayName = v.primaryName ?? v.secondaryName ?? "";
+      const nameFr = isFr ? v.primaryName : v.secondaryName;
+      const nameEn = isFr ? v.secondaryName : v.primaryName;
+      const aliases = [nameFr, nameEn].filter((n): n is string => !!n && n !== displayName);
+      items.push({
+        id: `${PROVIDER_ID}:${id}`,
+        provider: PROVIDER_ID,
+        providerId: id,
+        name: nameEn ?? displayName, // canonique EN pour les decklists
+        nameEn,
+        nameFr,
+        displayName,
+        searchAliases: aliases.length ? aliases : undefined,
+        localId: v.localId,
+        imageUrl: imageUrl(v.image, "high"),
+      });
+    }
+
+    items.sort((a, b) =>
+      sort === "name-desc"
+        ? b.displayName.localeCompare(a.displayName)
+        : a.displayName.localeCompare(b.displayName),
+    );
+    return items;
+  }
+
+  async getCard(providerId: string): Promise<CardRecord> {
+    const primaryUrl = `${BASE}/${displayLang}/cards/${encodeURIComponent(providerId)}`;
+    const secondaryUrl = `${BASE}/${secondaryLang()}/cards/${encodeURIComponent(providerId)}`;
+
+    const [primaryRes, secondaryRes] = await Promise.allSettled([
+      fetchJson<TcgdexCard>(primaryUrl),
+      fetchJson<TcgdexCard>(secondaryUrl),
+    ]);
+
+    if (primaryRes.status === "rejected") throw primaryRes.reason;
+    const c = primaryRes.value;
+    const other = secondaryRes.status === "fulfilled" ? secondaryRes.value : undefined;
+
+    const isFr = displayLang === "fr";
+    const nameFr = isFr ? c.name : other?.name;
+    const nameEn = isFr ? other?.name : c.name;
+
+    const variants = buildVariants(c);
+    const { foilStyle, hasFoilEffect } = resolveFoilStyle({
+      foil: c.foil,
+      rarity: c.rarity,
+      variants,
+    });
 
     return {
       id: `${PROVIDER_ID}:${c.id}`,
       provider: PROVIDER_ID,
       providerId: c.id,
-      name: c.name,
+      name: nameEn ?? c.name, // canonique EN
+      nameEn,
+      nameFr,
+      displayName: c.name,
       category: mapCategory(c.category),
       subtypes: buildSubtypes(c),
+      suffix: c.suffix,
       types: c.types ?? [],
       hp: c.hp,
       setId: c.set?.id,
@@ -175,20 +363,26 @@ export class TcgdexProvider implements CardProvider {
       legalities: c.legal
         ? { standard: c.legal.standard ?? false, expanded: c.legal.expanded ?? false }
         : undefined,
+      variants,
+      foil: c.foil ?? undefined,
+      hasFoilEffect,
+      foilStyle,
+      evolveFrom: c.evolveFrom,
+      illustrator: c.illustrator,
       raw: c,
     };
   }
 
-  async getSets(signal?: AbortSignal): Promise<SetInfo[]> {
-    const url = `${BASE}/${cardLang}/sets`;
-    const data = await fetchJson<{ id: string; name: string; cardCount?: { total: number } }[]>(
-      url,
-      signal,
-    );
+  async getSets(): Promise<SetInfo[]> {
+    const url = `${BASE}/${displayLang}/sets`;
+    const data = await fetchJson<
+      { id: string; name: string; logo?: string; cardCount?: { total: number } }[]
+    >(url);
     return data.map((s) => ({
       id: s.id,
       name: s.name,
       cardCount: s.cardCount?.total,
+      logoUrl: s.logo ? `${s.logo}.webp` : undefined,
     }));
   }
 }

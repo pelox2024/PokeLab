@@ -3,7 +3,7 @@
 Application web premium, **card-first**, pour explorer les cartes Pokémon TCG et
 construire des decks. Interface française, dark mode / glassmorphism, avec une direction artistique « finance app / Apple dark glass ».
 
-> État actuel : **Phase 1 / Lot 1 — Fondations + Card Explorer**.
+> État actuel : **Phase 1 / Lot 2 — Card Explorer complet**.
 
 ## Stack
 
@@ -24,15 +24,28 @@ npm run preview  # prévisualiser le build
 npm run lint     # ESLint
 ```
 
-## Ce qui fonctionne (Lot 1)
+## Ce qui fonctionne
 
+**Lot 1 — Fondations**
 - AppShell premium en français (top nav + bottom nav mobile)
-- Page **Cartes** : recherche debouncée, grille de cartes réelles via TCGdex,
-  images lazy-loadées, infinite scroll, états **loading / vide / erreur**
-- Design system : `Button`, `Chip`, `Input`, `Skeleton`, `EmptyState`, `Icon`
-- Couche API abstraite (`CardProvider`) → on peut changer de provider sans
-  toucher aux composants
-- Modèles de données et base Dexie définis (prêts pour le Builder)
+- Design system : `Button`, `Chip`, `Input`, `Select`, `Modal`, `Skeleton`,
+  `EmptyState`, `Icon`
+- Couche API abstraite (`CardProvider`) + base Dexie prête pour le Builder
+
+**Lot 2 — Card Explorer complet**
+- **Recherche bilingue FR/EN** : requête EN + FR fusionnée par id (Miaouss
+  retrouve la carte Meowth), repli gracieux si une langue échoue. EN reste
+  canonique pour les decklists.
+- **Modal détail carte** premium (2 colonnes desktop / vertical mobile) :
+  image foil interactive, attaques, talents, faiblesse, légalité, variantes,
+  ESC + clic backdrop, états loading/erreur.
+- **Variantes & foil** : mapping `variants`/`foil`, effets holo/reverse +
+  inclinaison 3D et reflet suivant le pointeur (désactivés si
+  `prefers-reduced-motion`).
+- **FilterBar V1** : catégorie, type, sous-type, extension, rareté, regulation
+  mark, légal Standard, réinitialiser — section avancée repliable.
+- **Tri** Nom A-Z / Z-A (seul tri fiable côté TCGdex sur les briefs).
+- **Fallback image** qualitatif + wording compteur (« X cartes affichées »).
 
 ## Structure
 
@@ -49,7 +62,7 @@ src/
 
 ## Roadmap
 
-- **Phase 1** — Fondations + Card Explorer ← *en cours*
+- **Phase 1** — Fondations + Card Explorer ← *terminée (Lots 1 & 2)*
 - **Phase 2** — Builder + persistance locale (Dexie)
 - **Phase 3** — Import / Export decklist (PTCG Live / Limitless)
 - **Phase 4** — Analyse de deck (stats + warnings)
