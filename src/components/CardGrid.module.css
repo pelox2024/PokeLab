@@ -1,0 +1,26 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px 18px;
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 16px 12px;
+  }
+}
+
+.skelTile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skelImg {
+  aspect-ratio: 245 / 342;
+}
+
+.sentinel {
+  height: 1px;
+}

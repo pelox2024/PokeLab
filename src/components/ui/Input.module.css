@@ -1,0 +1,58 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  transition:
+    border-color var(--t-fast),
+    box-shadow var(--t-fast),
+    background var(--t-fast);
+}
+
+.wrap:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  background: var(--surface-hover);
+}
+
+.md {
+  padding: 10px 16px;
+}
+.lg {
+  padding: 15px 20px;
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.trailing {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-md);
+}
+
+.lg .input {
+  font-size: var(--fs-lg);
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
