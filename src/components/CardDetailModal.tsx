@@ -13,6 +13,7 @@ import { Skeleton } from "./ui/Skeleton";
 import { EmptyState } from "./ui/EmptyState";
 import { Icon } from "./ui/Icon";
 import { FoilOverlay } from "./ui/FoilOverlay";
+import { TypeIcon } from "./ui/TypeIcon";
 import styles from "./CardDetailModal.module.css";
 
 interface CardDetailModalProps {
@@ -31,7 +32,7 @@ function TypeBadge({ type }: { type: string }) {
   const color = TYPE_COLORS[type] ?? "var(--text-muted)";
   return (
     <span className={styles.typeBadge} style={{ ["--c" as string]: color }}>
-      <span className={styles.typeDot} style={{ background: color }} />
+      <TypeIcon type={type} size="sm" withBg={false} />
       {type}
     </span>
   );
@@ -42,12 +43,7 @@ function EnergyCost({ cost }: { cost?: string[] }) {
   return (
     <span className={styles.cost}>
       {cost.map((c, i) => (
-        <span
-          key={i}
-          className={styles.energy}
-          style={{ background: TYPE_COLORS[c] ?? "var(--text-faint)" }}
-          title={c}
-        />
+        <TypeIcon key={i} type={c} size="sm" />
       ))}
     </span>
   );
@@ -117,10 +113,27 @@ function CopyButton({ label, value, icon }: { label: string; value: string; icon
   );
 }
 
+function PriceCells({ cells, currency }: { cells: [string, number | undefined][]; currency: string }) {
+  const present = cells.filter(([, v]) => v != null) as [string, number][];
+  if (!present.length) return null;
+  return (
+    <div className={styles.priceGrid}>
+      {present.map(([label, v]) => (
+        <div key={label} className={styles.priceCell}>
+          <span className={styles.priceLabel}>{label}</span>
+          <span className={[styles.priceValue, label === fr.detail.priceTrend ? styles.priceTrend : ""].join(" ")}>
+            {v.toFixed(2)} {currency}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PriceBlock({ card, cm }: { card: CardRecord; cm?: CardPricing }) {
   const exact = hasExactLink(cm);
   const link = cardmarketLink(card, cm);
-  const fmt = (n?: number) => (n != null ? `${n.toFixed(2)} ${cm?.currency ?? "EUR"}` : fr.detail.none);
+  const currency = cm?.currency ?? "EUR";
 
   const LinkButton = (
     <a className={styles.cmLink} href={link} target="_blank" rel="noopener noreferrer">
@@ -129,81 +142,78 @@ function PriceBlock({ card, cm }: { card: CardRecord; cm?: CardPricing }) {
     </a>
   );
 
-  const showValues = canShowPrice(cm);
-  const date = cm?.updatedAt ? new Date(cm.updatedAt).toLocaleDateString("fr-FR") : undefined;
-  const hasHolo = cm != null && (cm.holoAvg != null || cm.holoLow != null || cm.holoTrend != null);
+  // Aucune donnée : ligne très discrète, pas de gros bloc vide.
+  if (!cm) {
+    return (
+      <div className={styles.priceLine}>
+        <span className={styles.priceLineLabel}>{fr.detail.priceUnavailable}</span>
+        {LinkButton}
+      </div>
+    );
+  }
 
-  // Titre + tag selon la confiance
-  const indicative = cm?.confidence === "indicative";
+  // Donnée jugée trompeuse : pas de chiffres.
+  if (cm.confidence === "unsafe") {
+    return (
+      <section className={styles.priceBlock}>
+        <div className={styles.priceHead}>
+          <h3 className={styles.sectionTitle}>{fr.detail.priceToVerify}</h3>
+        </div>
+        <p className={styles.priceWarn}>{fr.detail.priceUnsafe}</p>
+        <div className={styles.priceFooter}>{LinkButton}</div>
+      </section>
+    );
+  }
+
+  if (!canShowPrice(cm)) {
+    return (
+      <div className={styles.priceLine}>
+        <span className={styles.priceLineLabel}>{fr.detail.priceUnavailable}</span>
+        {LinkButton}
+      </div>
+    );
+  }
+
+  const indicative = cm.confidence === "indicative";
   const title = indicative ? fr.detail.priceIndicative : fr.detail.price;
-
-  let tag: string | null = null;
-  if (cm?.confidence === "exact" || cm?.confidence === "variant") tag = "Cardmarket";
-  else if (indicative) tag = "Cardmarket · indicatif";
+  const tag = indicative ? "Cardmarket · indicatif" : "Cardmarket";
+  const date = cm.updatedAt ? new Date(cm.updatedAt).toLocaleDateString("fr-FR") : undefined;
 
   return (
     <section className={styles.priceBlock}>
       <div className={styles.priceHead}>
         <h3 className={styles.sectionTitle}>{title}</h3>
-        {tag && <span className={styles.cmTag}>{tag}</span>}
-        {!tag && (
-          <span className={styles.priceUnavailable}>
-            {cm?.confidence === "unsafe" ? fr.detail.priceToVerify : fr.detail.priceUnavailable}
-          </span>
-        )}
+        <span className={styles.cmTag}>{tag}</span>
       </div>
 
-      {/* Message de prudence quand on ne montre pas de chiffres */}
-      {cm?.confidence === "unsafe" && <p className={styles.priceWarn}>{fr.detail.priceUnsafe}</p>}
-      {!cm && <p className={styles.priceMuted}>{fr.detail.priceNoData}</p>}
+      <PriceCells
+        currency={currency}
+        cells={[
+          [fr.detail.priceLow, cm.low],
+          [fr.detail.priceTrend, cm.trend],
+          [fr.detail.priceAvg, cm.avg],
+        ]}
+      />
 
-      {/* Valeurs seulement si exploitables */}
-      {showValues && (
+      {(cm.holoLow != null || cm.holoTrend != null || cm.holoAvg != null) && (
         <>
-          <div className={styles.priceGrid}>
-            <div className={styles.priceCell}>
-              <span className={styles.priceLabel}>{fr.detail.priceLow}</span>
-              <span className={styles.priceValue}>{fmt(cm!.low)}</span>
-            </div>
-            <div className={styles.priceCell}>
-              <span className={styles.priceLabel}>{fr.detail.priceTrend}</span>
-              <span className={[styles.priceValue, styles.priceTrend].join(" ")}>{fmt(cm!.trend)}</span>
-            </div>
-            <div className={styles.priceCell}>
-              <span className={styles.priceLabel}>{fr.detail.priceAvg}</span>
-              <span className={styles.priceValue}>{fmt(cm!.avg)}</span>
-            </div>
-          </div>
-
-          {hasHolo && (
-            <>
-              <span className={styles.priceSub}>{fr.detail.priceHolo}</span>
-              <div className={styles.priceGrid}>
-                <div className={styles.priceCell}>
-                  <span className={styles.priceLabel}>{fr.detail.priceLow}</span>
-                  <span className={styles.priceValue}>{fmt(cm!.holoLow)}</span>
-                </div>
-                <div className={styles.priceCell}>
-                  <span className={styles.priceLabel}>{fr.detail.priceTrend}</span>
-                  <span className={[styles.priceValue, styles.priceTrend].join(" ")}>
-                    {fmt(cm!.holoTrend)}
-                  </span>
-                </div>
-                <div className={styles.priceCell}>
-                  <span className={styles.priceLabel}>{fr.detail.priceAvg}</span>
-                  <span className={styles.priceValue}>{fmt(cm!.holoAvg)}</span>
-                </div>
-              </div>
-            </>
-          )}
-
-          {indicative && <p className={styles.priceMuted}>{fr.detail.priceIndicativeNote}</p>}
+          <span className={styles.priceSub}>{fr.detail.priceHolo}</span>
+          <PriceCells
+            currency={currency}
+            cells={[
+              [fr.detail.priceLow, cm.holoLow],
+              [fr.detail.priceTrend, cm.holoTrend],
+              [fr.detail.priceAvg, cm.holoAvg],
+            ]}
+          />
         </>
       )}
 
+      {indicative && <p className={styles.priceMuted}>{fr.detail.priceIndicativeNote}</p>}
+
       <div className={styles.priceFooter}>
         {LinkButton}
-        {showValues && date && <span className={styles.priceDate}>{fr.detail.priceUpdated(date)}</span>}
+        {date && <span className={styles.priceDate}>{fr.detail.priceUpdated(date)}</span>}
       </div>
     </section>
   );
@@ -327,28 +337,35 @@ function DetailContent({ card }: { card: CardRecord }) {
         {/* Prix */}
         <PriceBlock card={card} cm={resolvedPrice} />
 
-        {/* Légalité + variantes */}
-        <div className={styles.badgesRow}>
-          {card.legalities && (
-            <>
-              <span
-                className={[styles.legal, card.legalities.standard ? styles.legalOk : styles.legalNo].join(" ")}
-              >
-                {fr.detail.standard}: {card.legalities.standard ? fr.detail.legal : fr.detail.illegal}
-              </span>
-              <span
-                className={[styles.legal, card.legalities.expanded ? styles.legalOk : styles.legalNo].join(" ")}
-              >
-                {fr.detail.expanded}: {card.legalities.expanded ? fr.detail.legal : fr.detail.illegal}
-              </span>
-            </>
-          )}
-          {activeVariants.map((v) => (
-            <span key={v} className={styles.variant}>
-              {v}
+        {/* Légalité */}
+        {card.legalities && (
+          <div className={styles.badgesRow}>
+            <span
+              className={[styles.legal, card.legalities.standard ? styles.legalOk : styles.legalNo].join(" ")}
+            >
+              {fr.detail.standard}: {card.legalities.standard ? fr.detail.legal : fr.detail.illegal}
             </span>
-          ))}
-        </div>
+            <span
+              className={[styles.legal, card.legalities.expanded ? styles.legalOk : styles.legalNo].join(" ")}
+            >
+              {fr.detail.expanded}: {card.legalities.expanded ? fr.detail.legal : fr.detail.illegal}
+            </span>
+          </div>
+        )}
+
+        {/* Variantes (bloc séparé du prix) */}
+        {activeVariants.length > 0 && (
+          <div className={styles.variantsBlock}>
+            <span className={styles.variantsLabel}>{fr.detail.variants}</span>
+            <div className={styles.badgesRow}>
+              {activeVariants.map((v) => (
+                <span key={v} className={styles.variant}>
+                  {v}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className={styles.footerRow}>
           {card.illustrator && (

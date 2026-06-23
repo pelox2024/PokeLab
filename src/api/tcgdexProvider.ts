@@ -82,17 +82,40 @@ const SUBTYPE_PARAM: Record<string, [string, string]> = {
   SpecialEnergy: ["energyType", "Special"],
 };
 
+/** OR natif TCGdex : valeurs jointes par `|`. */
+function joinOr(values?: string[]): string | undefined {
+  return values && values.length ? values.join("|") : undefined;
+}
+
 function applyFilters(params: URLSearchParams, filters?: CardFilters) {
   if (!filters) return;
-  if (filters.category) params.set("category", filters.category);
-  if (filters.type) params.set("types", filters.type);
-  if (filters.rarity) params.set("rarity", `eq:${filters.rarity}`);
+
+  const cat = joinOr(filters.categories);
+  if (cat) params.set("category", cat);
+
+  const types = joinOr(filters.types);
+  if (types) params.set("types", types);
+
+  if (filters.rarities?.length) params.set("rarity", `eq:${filters.rarities.join("|")}`);
+
+  const marks = joinOr(filters.regulationMarks);
+  if (marks) params.set("regulationMark", marks);
+
   if (filters.set) params.set("set", `eq:${filters.set}`);
-  if (filters.regulationMark) params.set("regulationMark", filters.regulationMark);
   if (filters.standardLegal) params.set("legal.standard", "true");
-  if (filters.subtype) {
-    const map = SUBTYPE_PARAM[filters.subtype];
-    if (map) params.set(map[0], map[1]);
+  if (filters.expandedLegal) params.set("legal.expanded", "true");
+
+  // Sous-types : regroupés par champ API (OR au sein d'un champ, AND entre champs)
+  if (filters.subtypes?.length) {
+    const byField: Record<string, string[]> = {};
+    for (const st of filters.subtypes) {
+      const map = SUBTYPE_PARAM[st];
+      if (!map) continue;
+      (byField[map[0]] ??= []).push(map[1]);
+    }
+    for (const [field, vals] of Object.entries(byField)) {
+      params.set(field, vals.join("|"));
+    }
   }
 }
 
@@ -435,16 +458,28 @@ export class TcgdexProvider implements CardProvider {
   }
 
   async getSets(): Promise<SetInfo[]> {
-    const url = `${BASE}/${displayLang}/sets`;
-    const data = await fetchJson<
-      { id: string; name: string; logo?: string; cardCount?: { total: number } }[]
-    >(url);
-    return data.map((s) => ({
-      id: s.id,
-      name: s.name,
-      cardCount: s.cardCount?.total,
-      logoUrl: s.logo ? `${s.logo}.webp` : undefined,
-    }));
+    const [sets, series] = await Promise.all([
+      fetchJson<{ id: string; name: string; logo?: string; cardCount?: { total: number } }[]>(
+        `${BASE}/${displayLang}/sets`,
+      ),
+      fetchJson<{ id: string; name: string }[]>(`${BASE}/${displayLang}/series`).catch(() => []),
+    ]);
+
+    // Map set -> série par préfixe d'id le plus long (swsh3 -> swsh).
+    const seriesByLen = [...series].sort((a, b) => b.id.length - a.id.length);
+    const findSeries = (setId: string) => seriesByLen.find((se) => setId.startsWith(se.id));
+
+    return sets.map((s) => {
+      const ser = findSeries(s.id);
+      return {
+        id: s.id,
+        name: s.name,
+        cardCount: s.cardCount?.total,
+        logoUrl: s.logo ? `${s.logo}.webp` : undefined,
+        seriesId: ser?.id,
+        seriesName: ser?.name,
+      };
+    });
   }
 }
 

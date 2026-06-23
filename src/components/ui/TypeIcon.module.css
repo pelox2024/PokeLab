@@ -1,0 +1,17 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.bg {
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tc) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 40%, transparent);
+}
+
+.wrap svg {
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tc) 40%, transparent));
+}

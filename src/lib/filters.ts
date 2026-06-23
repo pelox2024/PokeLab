@@ -39,6 +39,15 @@ export const TYPE_COLORS: Record<string, string> = Object.fromEntries(
   POKEMON_TYPES.map((t) => [t.value, t.color]),
 );
 
+const TYPE_LABELS: Record<string, string> = {
+  ...Object.fromEntries(POKEMON_TYPES.map((t) => [t.value, t.label])),
+  Fairy: "Fée",
+};
+
+export function typeLabel(type: string): string {
+  return TYPE_LABELS[type] ?? type;
+}
+
 export interface SubtypeOption {
   value: string; // clé UI (mappée côté provider)
   label: string;
@@ -76,3 +85,34 @@ export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "name-asc", label: "Nom A–Z" },
   { value: "name-desc", label: "Nom Z–A" },
 ];
+
+/** Ordre des séries du plus récent au plus ancien (faute de releaseDate API). */
+export const SERIES_ORDER: string[] = [
+  "me",
+  "sv",
+  "tcgp",
+  "swsh",
+  "sm",
+  "xy",
+  "bw",
+  "col",
+  "hgss",
+  "pl",
+  "dp",
+  "ecard",
+  "ex",
+  "pop",
+  "lc",
+  "neo",
+  "gym",
+  "base",
+  "tk",
+  "mc",
+  "misc",
+];
+
+export function seriesRank(seriesId?: string): number {
+  if (!seriesId) return SERIES_ORDER.length + 1;
+  const i = SERIES_ORDER.indexOf(seriesId);
+  return i === -1 ? SERIES_ORDER.length : i;
+}

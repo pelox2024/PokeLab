@@ -7,12 +7,14 @@ import {
   REGULATION_MARKS,
   SORT_OPTIONS,
   SUBTYPES,
+  typeLabel,
 } from "../lib/filters";
 import { fr } from "../lib/i18n";
 import { Chip } from "./ui/Chip";
 import { Select } from "./ui/Select";
 import { Button } from "./ui/Button";
 import { Icon } from "./ui/Icon";
+import { TypeIcon } from "./ui/TypeIcon";
 import { SetPicker } from "./SetPicker";
 import styles from "./FilterBar.module.css";
 
@@ -24,54 +26,65 @@ interface FilterBarProps {
   sets?: SetInfo[];
 }
 
-interface ActiveChip {
-  key: keyof CardFilters;
-  label: string;
-}
+type ArrayKey = "categories" | "types" | "subtypes" | "rarities" | "regulationMarks";
 
-function buildActiveChips(f: CardFilters, sets?: SetInfo[]): ActiveChip[] {
-  const chips: ActiveChip[] = [];
-  if (f.category) {
-    chips.push({
-      key: "category",
-      label: CATEGORIES.find((c) => c.value === f.category)?.label ?? f.category,
-    });
-  }
-  if (f.type) {
-    chips.push({
-      key: "type",
-      label: POKEMON_TYPES.find((t) => t.value === f.type)?.label ?? f.type,
-    });
-  }
-  if (f.subtype) {
-    chips.push({
-      key: "subtype",
-      label: SUBTYPES.find((s) => s.value === f.subtype)?.label ?? f.subtype,
-    });
-  }
-  if (f.rarity) chips.push({ key: "rarity", label: f.rarity });
-  if (f.regulationMark) chips.push({ key: "regulationMark", label: `Reg. ${f.regulationMark}` });
-  if (f.set) {
-    chips.push({ key: "set", label: sets?.find((s) => s.id === f.set)?.name ?? f.set });
-  }
-  if (f.standardLegal) chips.push({ key: "standardLegal", label: fr.detail.standard });
-  return chips;
+interface ActiveChip {
+  id: string;
+  label: string;
+  icon?: string; // type value pour TypeIcon
+  remove: () => void;
 }
 
 export function FilterBar({ filters, onChange, sort, onSortChange, sets }: FilterBarProps) {
   const [advanced, setAdvanced] = useState(false);
-  const activeChips = buildActiveChips(filters, sets);
+
+  const has = (key: ArrayKey, value: string) => (filters[key] ?? []).includes(value);
+
+  const toggle = (key: ArrayKey, value: string) => {
+    const cur = filters[key] ?? [];
+    const next = cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value];
+    onChange({ ...filters, [key]: next.length ? next : undefined });
+  };
+
+  const toggleBool = (key: "standardLegal" | "expandedLegal") => {
+    onChange({ ...filters, [key]: filters[key] ? undefined : true });
+  };
+
+  const removeValue = (key: ArrayKey, value: string) =>
+    onChange({ ...filters, [key]: (filters[key] ?? []).filter((v) => v !== value) });
+
+  // ---- Chips actifs ----
+  const activeChips: ActiveChip[] = [];
+  for (const c of filters.categories ?? [])
+    activeChips.push({
+      id: `cat-${c}`,
+      label: CATEGORIES.find((x) => x.value === c)?.label ?? c,
+      remove: () => removeValue("categories", c),
+    });
+  for (const t of filters.types ?? [])
+    activeChips.push({ id: `type-${t}`, label: typeLabel(t), icon: t, remove: () => removeValue("types", t) });
+  for (const s of filters.subtypes ?? [])
+    activeChips.push({
+      id: `sub-${s}`,
+      label: SUBTYPES.find((x) => x.value === s)?.label ?? s,
+      remove: () => removeValue("subtypes", s),
+    });
+  for (const r of filters.rarities ?? [])
+    activeChips.push({ id: `rar-${r}`, label: r, remove: () => removeValue("rarities", r) });
+  for (const m of filters.regulationMarks ?? [])
+    activeChips.push({ id: `reg-${m}`, label: `Reg. ${m}`, remove: () => removeValue("regulationMarks", m) });
+  if (filters.set)
+    activeChips.push({
+      id: "set",
+      label: sets?.find((s) => s.id === filters.set)?.name ?? filters.set,
+      remove: () => onChange({ ...filters, set: undefined }),
+    });
+  if (filters.standardLegal)
+    activeChips.push({ id: "std", label: fr.detail.standard, remove: () => toggleBool("standardLegal") });
+  if (filters.expandedLegal)
+    activeChips.push({ id: "exp", label: fr.detail.expanded, remove: () => toggleBool("expandedLegal") });
+
   const hasActive = activeChips.length > 0;
-
-  const toggle = <K extends keyof CardFilters>(key: K, value: CardFilters[K]) => {
-    onChange({ ...filters, [key]: filters[key] === value ? undefined : value });
-  };
-
-  const clear = (key: keyof CardFilters) => {
-    const next = { ...filters };
-    delete next[key];
-    onChange(next);
-  };
 
   return (
     <div className={styles.bar}>
@@ -79,11 +92,7 @@ export function FilterBar({ filters, onChange, sort, onSortChange, sets }: Filte
       <div className={styles.quick}>
         <div className={styles.group}>
           {CATEGORIES.map((c) => (
-            <Chip
-              key={c.value}
-              active={filters.category === c.value}
-              onClick={() => toggle("category", c.value)}
-            >
+            <Chip key={c.value} active={has("categories", c.value)} onClick={() => toggle("categories", c.value)}>
               {c.label}
             </Chip>
           ))}
@@ -91,12 +100,12 @@ export function FilterBar({ filters, onChange, sort, onSortChange, sets }: Filte
           {POKEMON_TYPES.map((t) => (
             <Chip
               key={t.value}
-              active={filters.type === t.value}
+              active={has("types", t.value)}
               accent={t.color}
-              onClick={() => toggle("type", t.value)}
+              onClick={() => toggle("types", t.value)}
               title={t.label}
             >
-              <span className={styles.dot} style={{ background: t.color }} />
+              <TypeIcon type={t.value} size="sm" withBg={false} />
               {t.label}
             </Chip>
           ))}
@@ -121,11 +130,12 @@ export function FilterBar({ filters, onChange, sort, onSortChange, sets }: Filte
         </div>
       </div>
 
-      {/* Résumé des filtres actifs */}
+      {/* Chips actifs */}
       {hasActive && (
         <div className={styles.active}>
           {activeChips.map((c) => (
-            <button key={c.key} type="button" className={styles.activeChip} onClick={() => clear(c.key)}>
+            <button key={c.id} type="button" className={styles.activeChip} onClick={c.remove}>
+              {c.icon && <TypeIcon type={c.icon} size="sm" withBg={false} />}
               {c.label}
               <Icon name="close" size={12} />
             </button>
@@ -136,63 +146,62 @@ export function FilterBar({ filters, onChange, sort, onSortChange, sets }: Filte
         </div>
       )}
 
-      {/* Section avancée — collapse animé */}
+      {/* Panneau avancé — collapse animé */}
       <div className={[styles.advWrap, advanced ? styles.advOpen : ""].filter(Boolean).join(" ")}>
         <div className={styles.advInner}>
           <div className={styles.advPanel}>
-            <div className={styles.field}>
+            {/* Carte */}
+            <div className={styles.section}>
+              <span className={styles.sectionLabel}>Carte</span>
               <span className={styles.label}>{fr.filters.subtype}</span>
               <div className={styles.group}>
                 {SUBTYPES.map((s) => (
-                  <Chip
-                    key={s.value}
-                    active={filters.subtype === s.value}
-                    onClick={() => toggle("subtype", s.value)}
-                  >
+                  <Chip key={s.value} active={has("subtypes", s.value)} onClick={() => toggle("subtypes", s.value)}>
                     {s.label}
                   </Chip>
                 ))}
               </div>
             </div>
 
-            <div className={styles.field}>
+            {/* Compétitif */}
+            <div className={styles.section}>
+              <span className={styles.sectionLabel}>Compétitif</span>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <span className={styles.label}>{fr.filters.legality}</span>
+                  <div className={styles.group}>
+                    <Chip active={!!filters.standardLegal} accent="var(--success)" onClick={() => toggleBool("standardLegal")}>
+                      {fr.detail.standard}
+                    </Chip>
+                    <Chip active={!!filters.expandedLegal} accent="var(--success)" onClick={() => toggleBool("expandedLegal")}>
+                      {fr.detail.expanded}
+                    </Chip>
+                  </div>
+                </div>
+                <div className={styles.field}>
+                  <span className={styles.label}>{fr.filters.regulationMark}</span>
+                  <div className={styles.group}>
+                    {REGULATION_MARKS.map((m) => (
+                      <Chip key={m} active={has("regulationMarks", m)} onClick={() => toggle("regulationMarks", m)}>
+                        {m}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Collection */}
+            <div className={styles.section}>
+              <span className={styles.sectionLabel}>Collection</span>
               <span className={styles.label}>{fr.filters.rarity}</span>
               <div className={styles.group}>
                 {RARITIES.map((r) => (
-                  <Chip key={r} active={filters.rarity === r} onClick={() => toggle("rarity", r)}>
+                  <Chip key={r} active={has("rarities", r)} onClick={() => toggle("rarities", r)}>
                     {r}
                   </Chip>
                 ))}
               </div>
-            </div>
-
-            <div className={styles.fieldRow}>
-              <div className={styles.field}>
-                <span className={styles.label}>{fr.filters.regulationMark}</span>
-                <div className={styles.group}>
-                  {REGULATION_MARKS.map((m) => (
-                    <Chip
-                      key={m}
-                      active={filters.regulationMark === m}
-                      onClick={() => toggle("regulationMark", m)}
-                    >
-                      {m}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.field}>
-                <span className={styles.label}>{fr.filters.format}</span>
-                <Chip
-                  active={!!filters.standardLegal}
-                  onClick={() => toggle("standardLegal", true)}
-                  accent="var(--success)"
-                >
-                  {fr.filters.standardLegal}
-                </Chip>
-              </div>
-
               <div className={styles.field}>
                 <span className={styles.label}>{fr.filters.set}</span>
                 <SetPicker

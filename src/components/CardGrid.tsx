@@ -20,7 +20,7 @@ interface CardGridProps {
   onReachEnd?: () => void;
   skeletonCount?: number;
   size?: GridSize;
-  rarityHint?: string;
+  rarityHint?: string[];
 }
 
 export function CardGrid({

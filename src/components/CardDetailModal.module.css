@@ -364,6 +364,36 @@
   line-height: 1.5;
 }
 
+/* Ligne prix discrète (aucune donnée) */
+.priceLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+
+.priceLineLabel {
+  font-size: var(--fs-sm);
+  color: var(--text-faint);
+}
+
+/* Bloc Variantes (séparé du prix) */
+.variantsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.variantsLabel {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
 .priceCell {
   display: flex;
   flex-direction: column;

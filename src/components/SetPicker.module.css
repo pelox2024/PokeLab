@@ -18,9 +18,7 @@
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-pill);
   cursor: pointer;
-  transition:
-    border-color var(--t-fast),
-    background var(--t-fast);
+  transition: border-color var(--t-fast), background var(--t-fast);
 }
 
 .trigger:hover {
@@ -47,10 +45,10 @@
 
 .popover {
   position: absolute;
-  z-index: 30;
+  z-index: 40;
   top: calc(100% + 6px);
   left: 0;
-  width: min(320px, 86vw);
+  width: min(380px, 90vw);
   border-radius: var(--radius-lg);
   background: var(--surface-strong);
   border: 1px solid var(--border-glass);
@@ -63,7 +61,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 11px 12px;
   color: var(--text-faint);
   border-bottom: 1px solid var(--border-faint);
 }
@@ -84,24 +82,51 @@
 }
 
 .list {
-  max-height: 280px;
+  max-height: 360px;
   overflow-y: auto;
   padding: 6px;
 }
 
-.option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+.allOption {
+  display: block;
   width: 100%;
   padding: 9px 10px;
+  margin-bottom: 2px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text);
   font-family: inherit;
   font-size: var(--fs-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.allOption:hover {
+  background: var(--surface-hover);
+}
+
+.groupTitle {
+  padding: 10px 10px 4px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
   text-align: left;
   cursor: pointer;
   transition: background var(--t-fast);
@@ -115,17 +140,51 @@
   background: var(--accent-soft);
 }
 
+.logoBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 26px;
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.optMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .optName {
+  font-size: var(--fs-sm);
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.optMeta {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+
+.optCount {
+  color: var(--text-faint);
+}
+
 .optId {
   flex-shrink: 0;
   font-size: var(--fs-xs);
-  color: var(--text-faint);
-  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .empty {

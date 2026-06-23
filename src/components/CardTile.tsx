@@ -12,8 +12,8 @@ import styles from "./CardTile.module.css";
 interface CardTileProps {
   card: CardBrief;
   onClick?: (card: CardBrief) => void;
-  /** Rareté du filtre actif : si full-card, on peut appliquer un foil léger. */
-  rarityHint?: string;
+  /** Raretés du filtre actif : si full-card, on peut appliquer un foil léger. */
+  rarityHint?: string[];
 }
 
 export function CardTile({ card, onClick, rarityHint }: CardTileProps) {
@@ -26,8 +26,9 @@ export function CardTile({ card, onClick, rarityHint }: CardTileProps) {
   const treatment = useMemo<CardVisualTreatment>(() => {
     const cached = queryClient.getQueryData<CardRecord>(["cards", "detail", card.providerId]);
     if (cached) return getCardVisualTreatment(cached);
-    if (rarityHint && isFullArtRarity(rarityHint)) {
-      const style: FoilStyle = /rainbow|gold|secret|hyper/i.test(rarityHint) ? "rainbow" : "holo";
+    const fullHint = rarityHint?.find((r) => isFullArtRarity(r));
+    if (fullHint) {
+      const style: FoilStyle = /rainbow|gold|secret|hyper/i.test(fullHint) ? "rainbow" : "holo";
       return {
         foilZone: "full",
         foilStyle: style,

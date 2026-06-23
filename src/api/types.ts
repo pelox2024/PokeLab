@@ -135,13 +135,14 @@ export interface CardBrief {
 }
 
 export interface CardFilters {
-  category?: CardCategory;
-  type?: string; // Fire, Water…
-  subtype?: string; // clé UI: Basic, Stage1, ex, Item…
-  set?: string; // set id
-  rarity?: string;
-  regulationMark?: string;
+  categories?: string[];
+  types?: string[];
+  subtypes?: string[];
+  rarities?: string[];
+  regulationMarks?: string[];
+  set?: string; // sélection unique
   standardLegal?: boolean;
+  expandedLegal?: boolean;
 }
 
 export type SortKey = "name-asc" | "name-desc";
@@ -167,6 +168,14 @@ export interface SetInfo {
   name: string;
   cardCount?: number;
   releaseDate?: string;
+  logoUrl?: string;
+  seriesId?: string;
+  seriesName?: string;
+}
+
+export interface SeriesInfo {
+  id: string;
+  name: string;
   logoUrl?: string;
 }
 
