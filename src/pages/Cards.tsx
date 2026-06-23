@@ -62,12 +62,6 @@ export function Cards() {
           </div>
         </div>
         <div className={styles.heroRight}>
-          {showResults && (
-            <div className={styles.countStat}>
-              <span className={styles.countNum}>{cards.length.toLocaleString("fr-FR")}</span>
-              <span className={styles.countLabel}>cartes affichées</span>
-            </div>
-          )}
           <Link to="/builder" className={styles.heroCta}>
             <Icon name="builder" size={16} />
             {fr.cards.openBuilder}
@@ -93,13 +87,16 @@ export function Cards() {
         sort={sort}
         onSortChange={setSort}
         sets={sets}
+        resultCount={cards.length}
+        hasMore={hasNextPage}
       />
 
       {/* Barre de résultats + densité */}
       {showResults && (
         <div className={styles.resultBar}>
           <div className={styles.resultInfo}>
-            {hasNextPage && <span className={styles.scrollHint}>{fr.cards.scrollMore}</span>}
+            <span className={styles.count}>{fr.cards.shown(cards.length)}</span>
+            {hasNextPage && <span className={styles.scrollHint}>· {fr.cards.scrollMore}</span>}
           </div>
           <div className={styles.density}>
             <span className={styles.densityLabel}>{fr.cards.density}</span>
@@ -146,7 +143,11 @@ export function Cards() {
         />
       )}
 
-      <CardDetailModal providerId={selected} onClose={() => setSelected(null)} />
+      <CardDetailModal
+        providerId={selected}
+        onClose={() => setSelected(null)}
+        onSelectCard={(id) => setSelected(id)}
+      />
     </div>
   );
 }

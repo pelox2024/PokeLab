@@ -185,6 +185,78 @@
   gap: 8px;
 }
 
+/* Autres versions */
+.versions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.versionsLabel {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.versionsRow {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.versionItem {
+  position: relative;
+  flex-shrink: 0;
+  width: 64px;
+  padding: 0;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-soft);
+  cursor: pointer;
+  transition: transform var(--t-fast), border-color var(--t-fast);
+}
+
+.versionItem:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+
+.versionImg {
+  display: block;
+  width: 100%;
+  aspect-ratio: 245 / 342;
+  object-fit: cover;
+}
+
+.versionFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 245 / 342;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--text-faint);
+}
+
+.versionNum {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2px 4px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+}
+
 .openImg {
   display: inline-flex;
   align-items: center;
@@ -517,16 +589,23 @@
 
 @media (max-width: 720px) {
   .scroll {
-    padding: 20px;
+    padding: 18px;
   }
   .grid {
     grid-template-columns: 1fr;
-    gap: 22px;
+    gap: 18px;
   }
+  /* Image carte mise en avant (hero) */
   .imageWrap {
     position: static;
-    max-width: 260px;
-    margin: 0 auto;
+    width: 72%;
+    max-width: 280px;
+    margin: 4px auto 2px;
+  }
+  .imageFrame {
+    box-shadow:
+      0 18px 50px rgba(0, 0, 0, 0.6),
+      0 0 0 1px var(--accent-soft);
   }
   .statsBlock {
     grid-template-columns: 1fr;

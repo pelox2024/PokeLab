@@ -78,3 +78,32 @@ version exacte, prix fiable/indicatif, lien Cardmarket.
 - Multi-valeurs encodées en `|` côté provider TCGdex (OR natif).
 - Sous-types regroupés par champ API avant requête.
 - Sets mis en cache (TanStack Query, 24 h), enrichis avec la série déduite.
+
+## UX mobile (Lot 2.9)
+Pattern retenu (validé par Baymard / Algolia / Pencil&Paper) :
+- header compact, recherche, chips de catégories ; **un bouton « Filtres » ouvre
+  un bottom-sheet** contenant toutes les facettes.
+- bottom-sheet : groupes (Carte / Compétitif / Collection), **footer sticky**
+  avec tri + « Réinitialiser » + **« Voir X cartes »** (ferme le tiroir).
+- `SetPicker` en **bottom-sheet plein écran** sur mobile (fini le popover coupé),
+  séries **repliables** + section « Récents ».
+- modal carte : **image mise en avant** (hero) + bandeau **« Autres versions »**.
+
+## Analyse des filtres Pokémon TCG Live (annexe)
+PTCG Live (constructeur) propose, dans un bottom-sheet avec « Voir X cartes » :
+- **Afficher** : Tout / Dans l'inventaire → *collection (Phase 5)*.
+- **Format** : Standard / Expanded → ✅ présent.
+- **Type d'énergie** : icônes rondes → ✅ présent (`TypeIcon`).
+- **Faiblesse** : type de faiblesse → *à ajouter* (filtre `weaknesses.type`,
+  faisabilité TCGdex à confirmer).
+- **Niveau** : De base / Niveau 1 / Niveau 2 / VMAX / VSTAR → ✅ (stage) ;
+  VMAX/VSTAR mappables via `suffix` (*à ajouter*).
+- **Caractéristique** : **Talent (a un talent)**, Pokémon-GX/EX, Prisme Étoile,
+  mécaniques d'attaque → *« a un talent »* = forte valeur, à ajouter
+  (`abilities` notnull) ; les mécaniques d'attaque relèvent des **tags
+  fonctionnels futurs** (draw/gust/switch/recovery).
+- **Extension** : groupée par série, **multi-sélection** + « tout sélectionner »
+  → ✅ groupée par série ; multi-set = *évolution future*.
+
+Priorités d'ajout : « a un talent », faiblesse, VMAX/VSTAR, multi-set, puis tags
+fonctionnels (rôles compétitifs) et « dans l'inventaire » (collection).

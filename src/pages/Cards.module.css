@@ -129,6 +129,12 @@
   min-height: 20px;
 }
 
+.count {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--text);
+}
+
 .scrollHint {
   font-size: var(--fs-sm);
   color: var(--text-faint);
@@ -148,19 +154,35 @@
 }
 
 @media (max-width: 720px) {
-  .hero {
-    flex-direction: column;
-    align-items: flex-start;
+  .page {
     gap: 14px;
   }
-  .heroRight {
-    width: 100%;
-    justify-content: space-between;
+  .hero {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+  .titleIcon {
+    width: 38px;
+    height: 38px;
   }
   .title {
-    font-size: var(--fs-xl);
+    font-size: 1.4rem;
+  }
+  .subtitle {
+    display: none;
+  }
+  /* Compteur + CTA secondaires masqués : le compteur vit dans la barre filtres */
+  .heroRight {
+    display: none;
   }
   .density .densityLabel {
+    display: none;
+  }
+  .resultBar {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .scrollHint {
     display: none;
   }
 }

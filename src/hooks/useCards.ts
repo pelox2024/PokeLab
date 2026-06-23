@@ -36,6 +36,20 @@ export function useCardDetail(providerId: string | null) {
   });
 }
 
+/** Autres impressions/versions d'une carte (même nom), pour la modal. */
+export function useCardVersions(name: string | undefined) {
+  return useQuery({
+    queryKey: ["cards", "versions", name],
+    queryFn: async () => {
+      const page = await activeProvider.searchCards({ search: name, pageSize: 60 });
+      const target = (name ?? "").toLowerCase();
+      return page.items.filter((b) => b.name.toLowerCase() === target);
+    },
+    enabled: !!name,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
 /** Prix exact via pokemontcg.io (lazy, à l'ouverture de la modal). */
 export function usePokemontcgPrice(card: CardRecord | undefined) {
   return useQuery({

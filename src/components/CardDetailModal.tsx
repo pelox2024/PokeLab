@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import type { CardPricing, CardRecord } from "../api/types";
-import { useCardDetail, usePokemontcgPrice } from "../hooks/useCards";
+import type { CardBrief, CardPricing, CardRecord } from "../api/types";
+import { useCardDetail, useCardVersions, usePokemontcgPrice } from "../hooks/useCards";
 import { useFoilHover } from "../hooks/useFoilHover";
 import { getCardVisualTreatment } from "../lib/foil";
 import { cardmarketLink, canShowPrice, hasExactLink, pickCardmarket } from "../lib/pricing";
@@ -19,6 +19,7 @@ import styles from "./CardDetailModal.module.css";
 interface CardDetailModalProps {
   providerId: string | null;
   onClose: () => void;
+  onSelectCard?: (providerId: string) => void;
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -114,7 +115,8 @@ function CopyButton({ label, value, icon }: { label: string; value: string; icon
 }
 
 function PriceCells({ cells, currency }: { cells: [string, number | undefined][]; currency: string }) {
-  const present = cells.filter(([, v]) => v != null) as [string, number][];
+  // 0 ou négatif = donnée absente (ex: reverseHolo=0 pour une carte sans reverse).
+  const present = cells.filter(([, v]) => v != null && v > 0) as [string, number][];
   if (!present.length) return null;
   return (
     <div className={styles.priceGrid}>
@@ -195,7 +197,7 @@ function PriceBlock({ card, cm }: { card: CardRecord; cm?: CardPricing }) {
         ]}
       />
 
-      {(cm.holoLow != null || cm.holoTrend != null || cm.holoAvg != null) && (
+      {((cm.holoLow ?? 0) > 0 || (cm.holoTrend ?? 0) > 0 || (cm.holoAvg ?? 0) > 0) && (
         <>
           <span className={styles.priceSub}>{fr.detail.priceHolo}</span>
           <PriceCells
@@ -219,10 +221,55 @@ function PriceBlock({ card, cm }: { card: CardRecord; cm?: CardPricing }) {
   );
 }
 
-function DetailContent({ card }: { card: CardRecord }) {
+function VersionsStrip({
+  versions,
+  currentId,
+  onSelect,
+}: {
+  versions: CardBrief[];
+  currentId: string;
+  onSelect?: (providerId: string) => void;
+}) {
+  const others = versions.filter((v) => v.providerId !== currentId);
+  if (!others.length || !onSelect) return null;
+  return (
+    <section className={styles.versions}>
+      <span className={styles.versionsLabel}>
+        {fr.detail.otherVersions} · {others.length}
+      </span>
+      <div className={styles.versionsRow}>
+        {others.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            className={styles.versionItem}
+            onClick={() => onSelect(v.providerId)}
+            title={`${v.displayName} · ${v.localId ?? ""}`}
+          >
+            {v.imageUrl ? (
+              <img src={v.imageUrl} alt={v.displayName} loading="lazy" className={styles.versionImg} />
+            ) : (
+              <span className={styles.versionFallback}>{v.localId ?? "?"}</span>
+            )}
+            {v.localId && <span className={styles.versionNum}>#{v.localId}</span>}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DetailContent({
+  card,
+  onSelectCard,
+}: {
+  card: CardRecord;
+  onSelectCard?: (providerId: string) => void;
+}) {
   // Prix exact via pokemontcg.io (prioritaire), repli TCGdex indicatif.
   const { data: livePrice } = usePokemontcgPrice(card);
   const resolvedPrice = livePrice ?? pickCardmarket(card.pricing);
+  const { data: versions } = useCardVersions(card.name);
 
   const otherName =
     card.nameFr && card.nameEn && card.nameFr !== card.nameEn
@@ -277,6 +324,10 @@ function DetailContent({ card }: { card: CardRecord }) {
             </a>
           )}
         </div>
+
+        {versions && (
+          <VersionsStrip versions={versions} currentId={card.providerId} onSelect={onSelectCard} />
+        )}
 
         <div className={styles.statsBlock}>
           <StatRow label={fr.detail.set} value={card.setName} />
@@ -398,12 +449,18 @@ function LoadingSkeleton() {
   );
 }
 
-export function CardDetailModal({ providerId, onClose }: CardDetailModalProps) {
+export function CardDetailModal({ providerId, onClose, onSelectCard }: CardDetailModalProps) {
   const { data, isLoading, isError } = useCardDetail(providerId);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Remonte en haut quand on change de carte (ex: choix d'une autre version).
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [providerId]);
 
   return (
     <Modal open={!!providerId} onClose={onClose} labelledBy="card-detail-title" size="lg">
-      <div className={styles.scroll}>
+      <div className={styles.scroll} ref={scrollRef}>
         {isLoading ? (
           <LoadingSkeleton />
         ) : isError || !data ? (
@@ -414,7 +471,7 @@ export function CardDetailModal({ providerId, onClose }: CardDetailModalProps) {
             body={fr.detail.loadError}
           />
         ) : (
-          <DetailContent card={data} />
+          <DetailContent card={data} onSelectCard={onSelectCard} />
         )}
       </div>
     </Modal>

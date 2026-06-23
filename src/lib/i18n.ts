@@ -54,6 +54,7 @@ export const fr = {
     variants: "Variantes",
     evolveFrom: "Évolue de",
     illustrator: "Illustration",
+    otherVersions: "Autres versions",
     none: "—",
     loadError: "Détails indisponibles pour cette carte.",
     copyName: "Copier le nom",

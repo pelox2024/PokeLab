@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SetInfo } from "../api/types";
 import { seriesRank } from "../lib/filters";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { Icon } from "./ui/Icon";
+import { BottomSheet } from "./ui/BottomSheet";
 import styles from "./SetPicker.module.css";
 
 interface SetPickerProps {
@@ -20,8 +22,8 @@ interface SeriesGroup {
 function sortSets(a: SetInfo, b: SetInfo): number {
   const ra = seriesRank(a.seriesId);
   const rb = seriesRank(b.seriesId);
-  if (ra !== rb) return ra - rb; // série la plus récente d'abord
-  return b.id.localeCompare(a.id); // set le plus récent (id) d'abord
+  if (ra !== rb) return ra - rb;
+  return b.id.localeCompare(a.id);
 }
 
 function groupBySeries(sets: SetInfo[]): SeriesGroup[] {
@@ -41,15 +43,7 @@ function groupBySeries(sets: SetInfo[]): SeriesGroup[] {
   return groups;
 }
 
-function SetRow({
-  set,
-  active,
-  onPick,
-}: {
-  set: SetInfo;
-  active: boolean;
-  onPick: () => void;
-}) {
+function SetRow({ set, active, onPick }: { set: SetInfo; active: boolean; onPick: () => void }) {
   return (
     <button
       type="button"
@@ -67,7 +61,7 @@ function SetRow({
         <span className={styles.optName}>{set.name}</span>
         <span className={styles.optMeta}>
           {set.seriesName ?? "—"}
-          {set.cardCount != null && <span className={styles.optCount}> · {set.cardCount} cartes</span>}
+          {set.cardCount != null && <span> · {set.cardCount} cartes</span>}
         </span>
       </span>
       <span className={styles.optId}>{set.id.toUpperCase()}</span>
@@ -75,12 +69,19 @@ function SetRow({
   );
 }
 
-export function SetPicker({ sets, value, onChange, placeholder }: SetPickerProps) {
-  const [open, setOpen] = useState(false);
+function PickerContent({
+  sets,
+  value,
+  placeholder,
+  onPick,
+}: {
+  sets: SetInfo[];
+  value?: string;
+  placeholder: string;
+  onPick: (id?: string) => void;
+}) {
   const [query, setQuery] = useState("");
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  const selected = useMemo(() => sets.find((s) => s.id === value), [sets, value]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const recent = useMemo(() => [...sets].sort(sortSets).slice(0, 6), [sets]);
   const groups = useMemo(() => groupBySeries(sets), [sets]);
@@ -93,8 +94,80 @@ export function SetPicker({ sets, value, onChange, placeholder }: SetPickerProps
       .sort(sortSets);
   }, [sets, query]);
 
+  const toggleGroup = (key: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  return (
+    <>
+      <div className={styles.searchRow}>
+        <Icon name="search" size={15} />
+        <input
+          autoFocus
+          className={styles.search}
+          placeholder="Rechercher (nom ou code)…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      <div className={styles.list}>
+        <button
+          type="button"
+          className={[styles.allOption, !value ? styles.optActive : ""].filter(Boolean).join(" ")}
+          onClick={() => onPick(undefined)}
+        >
+          {placeholder}
+        </button>
+
+        {filtered ? (
+          filtered.length ? (
+            filtered.map((s) => <SetRow key={s.id} set={s} active={s.id === value} onPick={() => onPick(s.id)} />)
+          ) : (
+            <div className={styles.empty}>Aucune extension</div>
+          )
+        ) : (
+          <>
+            <div className={styles.groupTitle}>Récents</div>
+            {recent.map((s) => (
+              <SetRow key={`r-${s.id}`} set={s} active={s.id === value} onPick={() => onPick(s.id)} />
+            ))}
+            {groups.map((g) => {
+              const key = g.seriesId ?? g.seriesName;
+              const open = expanded.has(key);
+              return (
+                <div key={key}>
+                  <button type="button" className={styles.groupHeader} onClick={() => toggleGroup(key)}>
+                    <span>{g.seriesName}</span>
+                    <span className={styles.groupCount}>
+                      {g.sets.length}
+                      <span className={[styles.caret, open ? styles.caretOpen : ""].join(" ")}>▾</span>
+                    </span>
+                  </button>
+                  {open && g.sets.map((s) => <SetRow key={s.id} set={s} active={s.id === value} onPick={() => onPick(s.id)} />)}
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+export function SetPicker({ sets, value, onChange, placeholder }: SetPickerProps) {
+  const isMobile = useMediaQuery("(max-width: 720px)");
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const selected = useMemo(() => sets.find((s) => s.id === value), [sets, value]);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open || isMobile) return;
     const onDown = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
@@ -105,72 +178,41 @@ export function SetPicker({ sets, value, onChange, placeholder }: SetPickerProps
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, isMobile]);
 
   const pick = (id?: string) => {
     onChange(id);
     setOpen(false);
-    setQuery("");
   };
+
+  const trigger = (
+    <button
+      type="button"
+      className={[styles.trigger, selected ? styles.hasValue : ""].filter(Boolean).join(" ")}
+      onClick={() => setOpen((v) => !v)}
+    >
+      <span className={styles.triggerLabel}>{selected ? selected.name : placeholder}</span>
+      <span className={styles.chevron}>▾</span>
+    </button>
+  );
+
+  if (isMobile) {
+    return (
+      <div className={styles.wrap}>
+        {trigger}
+        <BottomSheet open={open} onClose={() => setOpen(false)} title="Extension">
+          <PickerContent sets={sets} value={value} placeholder={placeholder} onPick={pick} />
+        </BottomSheet>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrap} ref={wrapRef}>
-      <button
-        type="button"
-        className={[styles.trigger, selected ? styles.hasValue : ""].filter(Boolean).join(" ")}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span className={styles.triggerLabel}>{selected ? selected.name : placeholder}</span>
-        <span className={styles.chevron}>▾</span>
-      </button>
-
+      {trigger}
       {open && (
         <div className={styles.popover}>
-          <div className={styles.searchRow}>
-            <Icon name="search" size={15} />
-            <input
-              autoFocus
-              className={styles.search}
-              placeholder="Rechercher (nom ou code)…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-
-          <div className={styles.list}>
-            <button
-              type="button"
-              className={[styles.allOption, !value ? styles.optActive : ""].filter(Boolean).join(" ")}
-              onClick={() => pick(undefined)}
-            >
-              {placeholder}
-            </button>
-
-            {filtered ? (
-              filtered.length ? (
-                filtered.map((s) => (
-                  <SetRow key={s.id} set={s} active={s.id === value} onPick={() => pick(s.id)} />
-                ))
-              ) : (
-                <div className={styles.empty}>Aucune extension</div>
-              )
-            ) : (
-              <>
-                <div className={styles.groupTitle}>Récents</div>
-                {recent.map((s) => (
-                  <SetRow key={`r-${s.id}`} set={s} active={s.id === value} onPick={() => pick(s.id)} />
-                ))}
-                {groups.map((g) => (
-                  <div key={g.seriesId ?? g.seriesName}>
-                    <div className={styles.groupTitle}>{g.seriesName}</div>
-                    {g.sets.map((s) => (
-                      <SetRow key={s.id} set={s} active={s.id === value} onPick={() => pick(s.id)} />
-                    ))}
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
+          <PickerContent sets={sets} value={value} placeholder={placeholder} onPick={pick} />
         </div>
       )}
     </div>
