@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCardBrowse, useCardSearch, useSets } from "../hooks/useCards";
 import { useDebounce } from "../lib/useDebounce";
-import { buildSetRankMap, orderSetsByRecency, sortCards } from "../lib/cardSort";
+import { buildSetRankMap, orderSetsByRecency, parseCardId, sortCards } from "../lib/cardSort";
 import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
 import type { CardSection } from "../components/CardGrid";
@@ -23,19 +23,6 @@ const DENSITY_OPTIONS: { value: GridSize; label: string }[] = [
   { value: "large", label: fr.cards.densityLarge },
 ];
 
-function hasFacetFilters(f: CardFilters): boolean {
-  return !!(
-    f.categories?.length ||
-    f.types?.length ||
-    f.subtypes?.length ||
-    f.rarities?.length ||
-    f.regulationMarks?.length ||
-    f.set ||
-    f.standardLegal ||
-    f.expandedLegal
-  );
-}
-
 export function Cards() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<CardFilters>({});
@@ -46,17 +33,26 @@ export function Cards() {
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
 
-  // Mode "classeur" : exploration pure (sans recherche ni filtre), tri par set.
-  // Avec des filtres, on passe en mode plat (le serveur ne renvoie que les
-  // cartes correspondantes, triées ensuite par set/numéro) -> pas de pages
-  // vides à traverser.
-  const binderMode =
-    !debounced.trim() && !hasFacetFilters(filters) && (sort === "set-recent" || sort === "set-old");
+  // Mode "classeur" (set par set, ordre set récent->ancien + numéro). Marche
+  // aussi avec filtres : chaque set est requêté avec les filtres (chargement
+  // par lots pour traverser vite les sets sans correspondance).
+  const binderMode = !debounced.trim() && (sort === "set-recent" || sort === "set-old");
 
-  const orderedSets = useMemo(
-    () => orderSetsByRecency(sets ?? [], sort !== "set-old"),
-    [sets, sort],
+  // Cartes Pokémon TCG Pocket (jeu digital, série "tcgp") : exclues par défaut
+  // du vrai JCC. Distinctes du reste, réactivables via le filtre dédié.
+  const pocketSetIds = useMemo(
+    () => new Set((sets ?? []).filter((s) => s.seriesId === "tcgp").map((s) => s.id)),
+    [sets],
   );
+  const isPocket = (providerId: string) => pocketSetIds.has(parseCardId(providerId).setId);
+  // On exclut Pocket sauf si l'utilisateur l'inclut OU choisit explicitement un set.
+  const excludePocket = !filters.includePocket && !filters.set;
+
+  const orderedSets = useMemo(() => {
+    const all = orderSetsByRecency(sets ?? [], sort !== "set-old");
+    if (filters.set) return all.filter((s) => s.id === filters.set);
+    return excludePocket ? all.filter((s) => s.seriesId !== "tcgp") : all;
+  }, [sets, sort, filters.set, excludePocket]);
   const setRank = useMemo(() => buildSetRankMap(sets ?? []), [sets]);
 
   const browseKey = `${sort}:${orderedSets.length}:${JSON.stringify(filters)}`;
@@ -67,18 +63,22 @@ export function Cards() {
   // Données aplaties (mode recherche) ou en sections (mode classeur)
   const flatCards: CardBrief[] = useMemo(() => {
     if (binderMode) return [];
-    const items = flat.data?.pages.flatMap((p) => p.items) ?? [];
+    let items = flat.data?.pages.flatMap((p) => p.items) ?? [];
+    if (excludePocket) items = items.filter((c) => !isPocket(c.providerId));
     return sortCards(items, sort, setRank);
-  }, [binderMode, flat.data, sort, setRank]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [binderMode, flat.data, sort, setRank, excludePocket, pocketSetIds]);
 
   const sections: CardSection[] = useMemo(() => {
     if (!binderMode) return [];
-    return (browse.data?.pages ?? []).map((p) => ({
-      key: p.set.id,
-      title: p.set.name,
-      subtitle: `${p.set.releaseDate?.slice(0, 4) ?? ""} · ${p.items.length} cartes`.trim(),
-      cards: p.items,
-    }));
+    return (browse.data?.pages ?? [])
+      .flatMap((p) => p.sets)
+      .map(({ set, items }) => ({
+        key: set.id,
+        title: set.name,
+        subtitle: `${set.releaseDate?.slice(0, 4) ?? ""} · ${items.length} cartes`.trim(),
+        cards: items,
+      }));
   }, [binderMode, browse.data]);
 
   const count = binderMode

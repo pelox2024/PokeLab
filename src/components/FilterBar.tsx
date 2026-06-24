@@ -72,7 +72,7 @@ export function FilterBar({
     onChange({ ...filters, [key]: next.length ? next : undefined });
   };
 
-  const toggleBool = (key: "standardLegal" | "expandedLegal") =>
+  const toggleBool = (key: "standardLegal" | "expandedLegal" | "includePocket") =>
     onChange({ ...filters, [key]: filters[key] ? undefined : true });
 
   const removeValue = (key: ArrayKey, value: string) =>
@@ -96,6 +96,8 @@ export function FilterBar({
     activeChips.push({ id: "std", label: fr.detail.standard, remove: () => toggleBool("standardLegal") });
   if (filters.expandedLegal)
     activeChips.push({ id: "exp", label: fr.detail.expanded, remove: () => toggleBool("expandedLegal") });
+  if (filters.includePocket)
+    activeChips.push({ id: "pocket", label: "+ TCG Pocket", remove: () => toggleBool("includePocket") });
 
   const hasActive = activeChips.length > 0;
 
@@ -168,6 +170,14 @@ export function FilterBar({
         <div className={styles.field}>
           <span className={styles.label}>{fr.filters.set}</span>
           <SetPicker sets={sets ?? []} value={filters.set} onChange={(id) => onChange({ ...filters, set: id })} placeholder={fr.filters.setPlaceholder} />
+        </div>
+        <div className={styles.field}>
+          <span className={styles.label}>Source</span>
+          <div className={styles.group}>
+            <Chip active={!!filters.includePocket} onClick={() => toggleBool("includePocket")}>
+              Inclure Pokémon TCG Pocket
+            </Chip>
+          </div>
         </div>
       </div>
     </div>

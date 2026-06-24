@@ -29,15 +29,21 @@ export function useCardSearch(search: string, filters: CardFilters, sort: SortKe
   });
 }
 
-export interface BrowsePage {
+export interface BrowseSet {
   set: SetInfo;
   items: CardBrief[];
-  index: number;
 }
+export interface BrowsePage {
+  sets: BrowseSet[];
+  page: number;
+}
+
+const BROWSE_BATCH = 3; // sets chargés en parallèle par étape (limite le churn)
 
 /**
  * Mode "classeur" : charge les cartes set par set (le plus récent d'abord),
- * triées par numéro croissant. Utilisé pour l'exploration par défaut.
+ * triées par numéro croissant. Les filtres actifs s'appliquent à chaque set ;
+ * on charge par lots pour traverser vite les sets sans correspondance.
  */
 export function useCardBrowse(
   orderedSets: SetInfo[],
@@ -50,19 +56,25 @@ export function useCardBrowse(
     enabled: enabled && orderedSets.length > 0,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
-      const index = pageParam as number;
-      const set = orderedSets[index];
-      // Les filtres actifs s'appliquent à chaque set (AND).
-      const page = await activeProvider.searchCards({
-        filters: { ...filters, set: set.id },
-        pageSize: 600,
-      });
-      const items = [...page.items].sort(
-        (a, b) => numberKey(parseCardId(a.providerId).localId) - numberKey(parseCardId(b.providerId).localId),
+      const page = pageParam as number;
+      const slice = orderedSets.slice(page * BROWSE_BATCH, page * BROWSE_BATCH + BROWSE_BATCH);
+      const sets = await Promise.all(
+        slice.map(async (set) => {
+          const res = await activeProvider.searchCards({
+            filters: { ...filters, set: set.id },
+            pageSize: 600,
+          });
+          const items = [...res.items].sort(
+            (a, b) =>
+              numberKey(parseCardId(a.providerId).localId) - numberKey(parseCardId(b.providerId).localId),
+          );
+          return { set, items };
+        }),
       );
-      return { set, items, index };
+      return { sets, page };
     },
-    getNextPageParam: (last) => (last.index + 1 < orderedSets.length ? last.index + 1 : undefined),
+    getNextPageParam: (last) =>
+      (last.page + 1) * BROWSE_BATCH < orderedSets.length ? last.page + 1 : undefined,
     staleTime: 10 * 60 * 1000,
   });
 }

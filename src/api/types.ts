@@ -143,6 +143,8 @@ export interface CardFilters {
   set?: string; // sélection unique
   standardLegal?: boolean;
   expandedLegal?: boolean;
+  /** Inclure les cartes Pokémon TCG Pocket (digital). Exclues par défaut. */
+  includePocket?: boolean;
 }
 
 export type SortKey = "set-recent" | "set-old" | "number-asc" | "name-asc" | "name-desc";
