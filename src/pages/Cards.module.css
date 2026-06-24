@@ -185,4 +185,8 @@
   .scrollHint {
     display: none;
   }
+  /* La recherche passe dans la barre basse sticky */
+  .searchRow {
+    display: none;
+  }
 }

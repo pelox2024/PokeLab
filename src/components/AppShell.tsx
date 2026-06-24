@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { fr } from "../lib/i18n";
@@ -13,11 +14,13 @@ const NAV = [
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className={styles.shell}>
       <header className={styles.nav}>
         <div className={styles.navInner}>
-          <NavLink to="/cartes" className={styles.brand}>
+          <NavLink to="/cartes" className={styles.brand} onClick={() => setMenuOpen(false)}>
             <span className={styles.logo}>
               <Icon name="spark" size={18} />
             </span>
@@ -44,27 +47,41 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className={styles.right}>
             <span className={styles.lang}>FR</span>
+            <button
+              type="button"
+              className={styles.burger}
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+            >
+              <Icon name={menuOpen ? "close" : "menu"} size={20} />
+            </button>
           </div>
         </div>
       </header>
 
-      <main className={styles.main}>{children}</main>
+      {/* Drawer de navigation (mobile) */}
+      {menuOpen && (
+        <div className={styles.menuBackdrop} onClick={() => setMenuOpen(false)}>
+          <nav className={styles.menuDrawer} onClick={(e) => e.stopPropagation()}>
+            {NAV.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) =>
+                  [styles.menuLink, isActive ? styles.menuLinkActive : ""].filter(Boolean).join(" ")
+                }
+              >
+                <Icon name={item.icon} size={20} />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      )}
 
-      {/* Bottom nav mobile */}
-      <nav className={styles.bottomNav}>
-        {NAV.slice(0, 4).map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              [styles.bottomLink, isActive ? styles.bottomActive : ""].filter(Boolean).join(" ")
-            }
-          >
-            <Icon name={item.icon} size={20} />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+      <main className={styles.main}>{children}</main>
     </div>
   );
 }

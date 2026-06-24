@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import type { CardFilters, SetInfo, SortKey } from "../api/types";
 import {
@@ -15,6 +16,7 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import { Chip } from "./ui/Chip";
 import { Select } from "./ui/Select";
 import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
 import { Icon } from "./ui/Icon";
 import { TypeIcon } from "./ui/TypeIcon";
 import { BottomSheet } from "./ui/BottomSheet";
@@ -29,6 +31,11 @@ interface FilterBarProps {
   sets?: SetInfo[];
   resultCount?: number;
   hasMore?: boolean;
+  /** Recherche pilotée par la barre basse mobile (optionnel). */
+  search?: string;
+  onSearchChange?: (v: string) => void;
+  /** Affiche une barre recherche+filtres+tri collée en bas sur mobile. */
+  mobileBottomBar?: boolean;
 }
 
 type ArrayKey = "categories" | "types" | "subtypes" | "rarities" | "regulationMarks";
@@ -48,8 +55,12 @@ export function FilterBar({
   sets,
   resultCount,
   hasMore,
+  search,
+  onSearchChange,
+  mobileBottomBar,
 }: FilterBarProps) {
   const isMobile = useMediaQuery("(max-width: 720px)");
+  const bottomBar = isMobile && !!mobileBottomBar;
   const [advanced, setAdvanced] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -167,7 +178,8 @@ export function FilterBar({
 
   return (
     <div className={styles.bar}>
-      {/* Ligne rapide */}
+      {/* Ligne rapide (desktop / sheet) */}
+      {!bottomBar && (
       <div className={styles.quick}>
         <div className={styles.quickChips}>
           {CATEGORIES.map((c) => (
@@ -205,9 +217,10 @@ export function FilterBar({
           </Button>
         </div>
       </div>
+      )}
 
       {/* Chips actifs */}
-      {hasActive && (
+      {!bottomBar && hasActive && (
         <div className={styles.active}>
           {activeChips.map((c) => (
             <button key={c.id} type="button" className={styles.activeChip} onClick={c.remove}>
@@ -259,6 +272,43 @@ export function FilterBar({
           {renderGroups(true)}
         </BottomSheet>
       )}
+
+      {/* Mobile : barre recherche + filtres + tri collée en bas */}
+      {bottomBar &&
+        createPortal(
+          <div className={styles.bottomBar}>
+            {hasActive && (
+              <div className={styles.bottomChips}>
+                {activeChips.map((c) => (
+                  <button key={c.id} type="button" className={styles.activeChip} onClick={c.remove}>
+                    {c.icon && <TypeIcon type={c.icon} size="sm" withBg={false} />}
+                    {c.label}
+                    <Icon name="close" size={12} />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className={styles.bottomRow}>
+              <Input
+                className={styles.bottomSearch}
+                iconLeft={<Icon name="search" size={18} />}
+                placeholder={fr.cards.searchPlaceholder}
+                value={search ?? ""}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+              />
+              <button
+                type="button"
+                className={[styles.bottomBtn, filterCount ? styles.bottomBtnActive : ""].join(" ")}
+                onClick={() => setSheetOpen(true)}
+                aria-label={fr.filters.title}
+              >
+                <Icon name="filter" size={20} />
+                {filterCount > 0 && <span className={styles.bottomBadge}>{filterCount}</span>}
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

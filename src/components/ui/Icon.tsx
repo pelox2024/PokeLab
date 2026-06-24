@@ -13,7 +13,9 @@ type IconName =
   | "empty"
   | "sort"
   | "spark"
-  | "close";
+  | "close"
+  | "menu"
+  | "filter";
 
 const paths: Record<IconName, ReactElement> = {
   search: (
@@ -79,6 +81,8 @@ const paths: Record<IconName, ReactElement> = {
     </>
   ),
   close: <path d="M18 6 6 18M6 6l12 12" />,
+  menu: <path d="M3 6h18M3 12h18M3 18h18" />,
+  filter: <path d="M3 5h18l-7 8v6l-4-2v-4L3 5Z" />,
 };
 
 interface IconProps extends SVGProps<SVGSVGElement> {

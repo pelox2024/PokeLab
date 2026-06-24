@@ -122,6 +122,9 @@ export function Cards() {
         sets={sets}
         resultCount={count}
         hasMore={q.hasNextPage}
+        search={search}
+        onSearchChange={setSearch}
+        mobileBottomBar
       />
 
       {showResults && (
