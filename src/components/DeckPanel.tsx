@@ -3,6 +3,7 @@ import { useDeckStore } from "../store/deckStore";
 import { buildDeckGroups, computeStats } from "../lib/deckStats";
 import type { DeckSortKey } from "../lib/deckStats";
 import type { DeckCard } from "../db/schema";
+import type { SetInfo } from "../api/types";
 import { fr } from "../lib/i18n";
 import { Icon } from "./ui/Icon";
 import { Select } from "./ui/Select";
@@ -14,6 +15,8 @@ type DeckView = "grid" | "stacks" | "list";
 
 const SORT_OPTIONS: { value: DeckSortKey; label: string }[] = [
   { value: "type", label: "Par type" },
+  { value: "set", label: "Par extension" },
+  { value: "series", label: "Par série" },
   { value: "name", label: "Nom (A→Z)" },
   { value: "hp", label: "PV" },
   { value: "rarity", label: "Rareté" },
@@ -127,12 +130,15 @@ export function DeckPanel({
   embedded,
   onInspect,
   wide,
+  sets,
 }: {
   onClose?: () => void;
   embedded?: boolean;
   onInspect?: (providerId: string) => void;
   /** Disposition large : tuiles du deck et statistiques affichées côte à côte. */
   wide?: boolean;
+  /** Extensions (pour les regroupements par Set / Série). */
+  sets?: SetInfo[];
 }) {
   const cards = useDeckStore((s) => s.cards);
   const clearCards = useDeckStore((s) => s.clearCards);
@@ -145,7 +151,7 @@ export function DeckPanel({
   useEffect(() => localStorage.setItem("pokelab.deckSort", deckSort), [deckSort]);
 
   const stats = computeStats(cards);
-  const deckGroups = buildDeckGroups(cards, deckSort);
+  const deckGroups = buildDeckGroups(cards, deckSort, { sets });
   const pct = Math.min(100, Math.round((stats.total / 60) * 100));
   const complete = stats.total === 60;
 
@@ -208,7 +214,7 @@ export function DeckPanel({
   ));
 
   return (
-    <div className={styles.panel}>
+    <div className={[styles.panel, embedded ? styles.panelFlow : ""].filter(Boolean).join(" ")}>
       <header className={styles.head}>
         {!embedded && (
           <div className={styles.headTop}>

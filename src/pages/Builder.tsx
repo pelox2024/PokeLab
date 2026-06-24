@@ -191,7 +191,7 @@ export function Builder() {
       <div className={styles.page}>
         {deckHeader}
         <div className={styles.deckMain}>
-          <DeckPanel embedded onInspect={setInspected} />
+          <DeckPanel embedded onInspect={setInspected} sets={sets} />
         </div>
         <div className={styles.addBar}>
           {cards.length > 0 && (
@@ -228,7 +228,7 @@ export function Builder() {
         <section className={styles.deckZone}>
           {deckHeader}
           <div className={styles.deckCockpit}>
-            <DeckPanel wide onInspect={setInspected} />
+            <DeckPanel wide onInspect={setInspected} sets={sets} />
           </div>
         </section>
 

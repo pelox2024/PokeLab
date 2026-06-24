@@ -1,5 +1,7 @@
 import type { DeckCard } from "../db/schema";
+import type { SetInfo } from "../api/types";
 import { RARITIES } from "./filters";
+import { setRecencyValue } from "./cardSort";
 
 export interface HpBucket {
   label: string;
@@ -216,7 +218,7 @@ export function groupByCategory(cards: DeckCard[]): Record<DeckGroupKey, DeckCar
    Tri / regroupement des cartes du deck (façon LorcaHub)
    ============================================================ */
 
-export type DeckSortKey = "type" | "name" | "hp" | "rarity" | "qty";
+export type DeckSortKey = "type" | "set" | "series" | "name" | "hp" | "rarity" | "qty";
 
 export interface DeckGroup {
   key: string;
@@ -228,7 +230,38 @@ export interface DeckGroup {
 const RARITY_RANK = new Map(RARITIES.map((r, i) => [r, i] as const));
 const qtySum = (arr: DeckCard[]) => arr.reduce((s, c) => s + c.quantity, 0);
 
-export function buildDeckGroups(cards: DeckCard[], sort: DeckSortKey): DeckGroup[] {
+export interface DeckGroupOptions {
+  /** Métadonnées des extensions, pour les regroupements Set / Série. */
+  sets?: SetInfo[];
+}
+
+/** Regroupe par extension (Set) ou série, classé du plus récent au plus ancien. */
+function groupBySetField(cards: DeckCard[], sets: SetInfo[], field: "set" | "series"): DeckGroup[] {
+  const meta = new Map(sets.map((s) => [s.id, s]));
+  const map = new Map<string, { label: string; rank: number; cards: DeckCard[] }>();
+  for (const c of cards) {
+    const set = c.setCode ? meta.get(c.setCode) : undefined;
+    const key = field === "series" ? set?.seriesId ?? "_" : c.setCode ?? "_";
+    const label =
+      field === "series"
+        ? set?.seriesName ?? "Série inconnue"
+        : set?.name ?? c.setCode?.toUpperCase() ?? "Sans extension";
+    const rank = set ? setRecencyValue(set) : -Infinity;
+    const g = map.get(key) ?? { label, rank, cards: [] };
+    g.cards.push(c);
+    map.set(key, g);
+  }
+  return [...map.values()]
+    .sort((a, b) => b.rank - a.rank)
+    .map((g) => ({
+      key: g.label,
+      label: g.label,
+      count: qtySum(g.cards),
+      cards: [...g.cards].sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+}
+
+export function buildDeckGroups(cards: DeckCard[], sort: DeckSortKey, opts?: DeckGroupOptions): DeckGroup[] {
   if (sort === "type") {
     const g = groupByCategory(cards);
     return GROUP_ORDER.filter((k) => g[k].length > 0).map((k) => ({
@@ -237,6 +270,10 @@ export function buildDeckGroups(cards: DeckCard[], sort: DeckSortKey): DeckGroup
       count: qtySum(g[k]),
       cards: g[k],
     }));
+  }
+
+  if (sort === "set" || sort === "series") {
+    return groupBySetField(cards, opts?.sets ?? [], sort);
   }
 
   if (sort === "rarity") {

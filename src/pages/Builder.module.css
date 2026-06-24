@@ -139,10 +139,9 @@
   }
 }
 
-/* Mobile deck-first : le deck occupe l'écran */
+/* Mobile deck-first : le deck se déroule, c'est la page qui défile. */
 .deckMain {
-  height: calc(100dvh - var(--nav-h) - 190px);
-  min-height: 300px;
+  min-height: 40vh;
 }
 
 /* Barre d'action collée en bas (zone du pouce) */
