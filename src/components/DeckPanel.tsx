@@ -81,10 +81,13 @@ export function DeckPanel({
   onClose,
   embedded,
   onInspect,
+  wide,
 }: {
   onClose?: () => void;
   embedded?: boolean;
   onInspect?: (providerId: string) => void;
+  /** Disposition large : tuiles du deck et statistiques affichées côte à côte. */
+  wide?: boolean;
 }) {
   const cards = useDeckStore((s) => s.cards);
   const clearCards = useDeckStore((s) => s.clearCards);
@@ -100,6 +103,22 @@ export function DeckPanel({
     if (cards.length === 0) return;
     if (confirm("Vider le deck ?")) clearCards();
   };
+
+  const tilesView = GROUP_ORDER.filter((g) => groups[g].length > 0).map((g) => {
+    const count = groups[g].reduce((s, c) => s + c.quantity, 0);
+    return (
+      <section key={g} className={styles.group}>
+        <div className={styles.groupHead}>
+          {GROUP_LABEL[g]} · {count}
+        </div>
+        <div className={styles.pileGrid}>
+          {groups[g].map((c) => (
+            <DeckCardTile key={c.id} card={c} onInspect={onInspect} />
+          ))}
+        </div>
+      </section>
+    );
+  });
 
   return (
     <div className={styles.panel}>
@@ -141,7 +160,7 @@ export function DeckPanel({
         )}
       </header>
 
-      {cards.length > 0 && (
+      {!wide && cards.length > 0 && (
         <div className={styles.tabs} role="tablist">
           <button
             type="button"
@@ -166,29 +185,21 @@ export function DeckPanel({
         </div>
       )}
 
-      <div className={styles.body}>
-        {cards.length === 0 ? (
+      {cards.length === 0 ? (
+        <div className={styles.body}>
           <div className={styles.empty}>{fr.builder.emptyDeck}</div>
-        ) : tab === "stats" ? (
-          <DeckStats stats={stats} />
-        ) : (
-          GROUP_ORDER.filter((g) => groups[g].length > 0).map((g) => {
-            const count = groups[g].reduce((s, c) => s + c.quantity, 0);
-            return (
-              <section key={g} className={styles.group}>
-                <div className={styles.groupHead}>
-                  {GROUP_LABEL[g]} · {count}
-                </div>
-                <div className={styles.pileGrid}>
-                  {groups[g].map((c) => (
-                    <DeckCardTile key={c.id} card={c} onInspect={onInspect} />
-                  ))}
-                </div>
-              </section>
-            );
-          })
-        )}
-      </div>
+        </div>
+      ) : wide ? (
+        <div className={styles.wide}>
+          <div className={styles.wideList}>{tilesView}</div>
+          <aside className={styles.wideStats}>
+            <div className={styles.wideStatsTitle}>{fr.builder.tabStats}</div>
+            <DeckStats stats={stats} />
+          </aside>
+        </div>
+      ) : (
+        <div className={styles.body}>{tab === "stats" ? <DeckStats stats={stats} /> : tilesView}</div>
+      )}
 
       {cards.length > 0 && !embedded && (
         <footer className={styles.footer}>

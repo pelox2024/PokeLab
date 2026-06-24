@@ -167,6 +167,38 @@
   padding: 12px;
 }
 
+/* ---- Disposition large : tuiles + stats côte à côte ---- */
+.wide {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 0;
+}
+
+.wideList {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.wideStats {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  border-left: 1px solid var(--border-faint);
+  background: var(--surface-soft);
+}
+
+.wideStatsTitle {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  margin-bottom: 14px;
+}
+
 .empty {
   padding: 40px 16px;
   text-align: center;

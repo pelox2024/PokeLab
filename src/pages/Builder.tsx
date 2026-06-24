@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { activeProvider } from "../api/cardApi";
 import type { CardBrief, CardFilters, CardRecord, SortKey } from "../api/types";
@@ -40,6 +41,30 @@ export function Builder() {
   const [sort, setSort] = useState<SortKey>("set-recent");
   const [drawer, setDrawer] = useState(false);
   const [inspected, setInspected] = useState<string | null>(null);
+
+  // Largeur du panneau d'ajout (redimensionnable, persistée).
+  const EXPLORER_MIN = 320;
+  const EXPLORER_MAX = 720;
+  const [explorerW, setExplorerW] = useState(() => {
+    const saved = Number(localStorage.getItem("pokelab.explorerW"));
+    return saved >= EXPLORER_MIN && saved <= EXPLORER_MAX ? saved : 440;
+  });
+  const dragRef = useRef<{ x: number; w: number } | null>(null);
+
+  const onResizeStart = (e: ReactPointerEvent) => {
+    dragRef.current = { x: e.clientX, w: explorerW };
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+  };
+  const onResizeMove = (e: ReactPointerEvent) => {
+    if (!dragRef.current) return;
+    // Le panneau est à droite : déplacer la poignée vers la gauche l'élargit.
+    const next = dragRef.current.w - (e.clientX - dragRef.current.x);
+    setExplorerW(Math.max(EXPLORER_MIN, Math.min(EXPLORER_MAX, next)));
+  };
+  const onResizeEnd = () => {
+    if (dragRef.current) localStorage.setItem("pokelab.explorerW", String(explorerW));
+    dragRef.current = null;
+  };
 
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
@@ -188,15 +213,28 @@ export function Builder() {
     );
   }
 
-  // --- Desktop : explorer + deck panel ---
+  // --- Desktop : deck (héros) au centre + explorateur d'ajout redimensionnable ---
   return (
     <div className={styles.page}>
-      {deckHeader}
-      <div className={styles.layout}>
-        {explorer}
-        <aside className={styles.aside}>
-          <DeckPanel onInspect={setInspected} />
-        </aside>
+      <div className={styles.layout} style={{ ["--explorer-w" as string]: `${explorerW}px` } as CSSProperties}>
+        <section className={styles.deckZone}>
+          {deckHeader}
+          <div className={styles.deckCockpit}>
+            <DeckPanel wide onInspect={setInspected} />
+          </div>
+        </section>
+        <div
+          className={styles.resizer}
+          onPointerDown={onResizeStart}
+          onPointerMove={onResizeMove}
+          onPointerUp={onResizeEnd}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Redimensionner le panneau d'ajout"
+        >
+          <span className={styles.resizerGrip} />
+        </div>
+        <aside className={styles.explorerPanel}>{explorer}</aside>
       </div>
       <CardDetailModal providerId={inspected} onClose={() => setInspected(null)} onSelectCard={setInspected} />
     </div>
