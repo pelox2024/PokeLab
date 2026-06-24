@@ -44,11 +44,8 @@
 }
 
 .popover {
-  position: absolute;
-  z-index: 40;
-  top: calc(100% + 6px);
-  left: 0;
-  width: min(380px, 90vw);
+  position: fixed;
+  z-index: 200;
   border-radius: var(--radius-lg);
   background: var(--surface-strong);
   border: 1px solid var(--border-glass);

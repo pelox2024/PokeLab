@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { SetInfo } from "../api/types";
 import { setRecencyValue } from "../lib/cardSort";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -77,11 +78,13 @@ function PickerContent({
   value,
   placeholder,
   onPick,
+  autoFocus,
 }: {
   sets: SetInfo[];
   value?: string;
   placeholder: string;
   onPick: (id?: string) => void;
+  autoFocus?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -110,7 +113,7 @@ function PickerContent({
       <div className={styles.searchRow}>
         <Icon name="search" size={15} />
         <input
-          autoFocus
+          autoFocus={autoFocus}
           className={styles.search}
           placeholder="Rechercher (nom ou code)…"
           value={query}
@@ -162,17 +165,49 @@ function PickerContent({
   );
 }
 
+interface PopRect {
+  top: number;
+  left: number;
+  width: number;
+}
+
 export function SetPicker({ sets, value, onChange, placeholder }: SetPickerProps) {
   const isMobile = useMediaQuery("(max-width: 720px)");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState<PopRect | null>(null);
 
   const selected = useMemo(() => sets.find((s) => s.id === value), [sets, value]);
+
+  // Positionne le popover (desktop) en coordonnées viewport : il est rendu dans
+  // un portal sur <body> pour échapper au `overflow:hidden` du panneau filtres.
+  useLayoutEffect(() => {
+    if (!open || isMobile) return;
+    const place = () => {
+      const el = wrapRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const width = Math.min(380, window.innerWidth - 24);
+      // Cale le popover sous le trigger, sans déborder à droite de l'écran.
+      const left = Math.min(r.left, window.innerWidth - width - 12);
+      setRect({ top: r.bottom + 6, left: Math.max(12, left), width });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, isMobile]);
 
   useEffect(() => {
     if (!open || isMobile) return;
     const onDown = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (wrapRef.current?.contains(t) || popRef.current?.contains(t)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("mousedown", onDown);
@@ -213,11 +248,18 @@ export function SetPicker({ sets, value, onChange, placeholder }: SetPickerProps
   return (
     <div className={styles.wrap} ref={wrapRef}>
       {trigger}
-      {open && (
-        <div className={styles.popover}>
-          <PickerContent sets={sets} value={value} placeholder={placeholder} onPick={pick} />
-        </div>
-      )}
+      {open &&
+        rect &&
+        createPortal(
+          <div
+            ref={popRef}
+            className={styles.popover}
+            style={{ top: rect.top, left: rect.left, width: rect.width }}
+          >
+            <PickerContent sets={sets} value={value} placeholder={placeholder} onPick={pick} autoFocus />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

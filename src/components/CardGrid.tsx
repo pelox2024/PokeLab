@@ -9,14 +9,14 @@ import styles from "./CardGrid.module.css";
 export type GridSize = "compact" | "normal" | "large";
 
 const COL_MIN_DESKTOP: Record<GridSize, string> = {
-  compact: "128px",
-  normal: "162px",
-  large: "205px",
+  compact: "112px",
+  normal: "142px",
+  large: "186px",
 };
 const COL_MIN_MOBILE: Record<GridSize, string> = {
-  compact: "100px",
-  normal: "140px",
-  large: "185px",
+  compact: "96px",
+  normal: "124px",
+  large: "162px",
 };
 
 export interface CardSection {
