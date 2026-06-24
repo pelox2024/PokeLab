@@ -58,6 +58,9 @@ export const SUBTYPES: SubtypeOption[] = [
   { value: "Stage1", label: "Niveau 1" },
   { value: "Stage2", label: "Niveau 2" },
   { value: "ex", label: "ex" },
+  { value: "V", label: "V" },
+  { value: "VMAX", label: "VMAX" },
+  { value: "VSTAR", label: "VSTAR" },
   { value: "Item", label: "Objet" },
   { value: "Supporter", label: "Supporter" },
   { value: "Stadium", label: "Stade" },
@@ -65,17 +68,27 @@ export const SUBTYPES: SubtypeOption[] = [
   { value: "SpecialEnergy", label: "Énergie spéciale" },
 ];
 
-/** Raretés les plus utiles en chips (liste courte, pas exhaustive). */
+/**
+ * Raretés réelles TCGdex (valeurs exactes vérifiées via l'API).
+ * Triées du plus commun au plus rare / spécial.
+ */
 export const RARITIES: string[] = [
   "Common",
   "Uncommon",
   "Rare",
   "Rare Holo",
+  "Holo Rare",
   "Double rare",
   "Ultra Rare",
   "Illustration rare",
   "Special illustration rare",
   "Hyper rare",
+  "Shiny rare",
+  "Shiny Ultra Rare",
+  "Radiant Rare",
+  "ACE SPEC Rare",
+  "Amazing Rare",
+  "Black White Rare",
 ];
 
 /** Regulation marks récentes (Standard tourne autour de G/H/I). */

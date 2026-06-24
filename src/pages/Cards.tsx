@@ -23,6 +23,19 @@ const DENSITY_OPTIONS: { value: GridSize; label: string }[] = [
   { value: "large", label: fr.cards.densityLarge },
 ];
 
+function hasFacetFilters(f: CardFilters): boolean {
+  return !!(
+    f.categories?.length ||
+    f.types?.length ||
+    f.subtypes?.length ||
+    f.rarities?.length ||
+    f.regulationMarks?.length ||
+    f.set ||
+    f.standardLegal ||
+    f.expandedLegal
+  );
+}
+
 export function Cards() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<CardFilters>({});
@@ -33,14 +46,17 @@ export function Cards() {
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
 
-  // Mode "classeur" : dès qu'on trie par set (avec ou sans filtres), on charge
-  // set par set pour garder l'ordre set récent -> ancien + numéro croissant.
-  const binderMode = !debounced.trim() && (sort === "set-recent" || sort === "set-old");
+  // Mode "classeur" : exploration pure (sans recherche ni filtre), tri par set.
+  // Avec des filtres, on passe en mode plat (le serveur ne renvoie que les
+  // cartes correspondantes, triées ensuite par set/numéro) -> pas de pages
+  // vides à traverser.
+  const binderMode =
+    !debounced.trim() && !hasFacetFilters(filters) && (sort === "set-recent" || sort === "set-old");
 
-  const orderedSets = useMemo(() => {
-    const all = orderSetsByRecency(sets ?? [], sort !== "set-old");
-    return filters.set ? all.filter((s) => s.id === filters.set) : all;
-  }, [sets, sort, filters.set]);
+  const orderedSets = useMemo(
+    () => orderSetsByRecency(sets ?? [], sort !== "set-old"),
+    [sets, sort],
+  );
   const setRank = useMemo(() => buildSetRankMap(sets ?? []), [sets]);
 
   const browseKey = `${sort}:${orderedSets.length}:${JSON.stringify(filters)}`;
@@ -142,7 +158,7 @@ export function Cards() {
         />
       ) : loading ? (
         <CardGrid cards={[]} skeletonCount={24} size={size} />
-      ) : count === 0 ? (
+      ) : count === 0 && !q.hasNextPage ? (
         <EmptyState icon={<Icon name="empty" size={26} />} title={fr.states.emptyTitle} body={fr.states.emptyBody} />
       ) : (
         <CardGrid
@@ -151,7 +167,7 @@ export function Cards() {
           size={size}
           rarityHint={filters.rarities}
           onCardClick={(c) => setSelected(c.providerId)}
-          loadingMore={q.isFetchingNextPage}
+          loadingMore={q.isFetchingNextPage || (count === 0 && q.hasNextPage)}
           onReachEnd={() => {
             if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage();
           }}

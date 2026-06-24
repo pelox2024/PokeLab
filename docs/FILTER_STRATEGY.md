@@ -107,3 +107,66 @@ PTCG Live (constructeur) propose, dans un bottom-sheet avec « Voir X cartes » 
 
 Priorités d'ajout : « a un talent », faiblesse, VMAX/VSTAR, multi-set, puis tags
 fonctionnels (rôles compétitifs) et « dans l'inventaire » (collection).
+
+## Taxonomie complète (recherche : Limitless, pokemon.com, TCG Collector)
+
+Référence compétitive (Limitless /cards/advanced) + officiel + collectionneurs.
+On distingue **3 profils** et on mappe à ce que TCGdex supporte réellement
+(vérifié via l'API).
+
+### A. Carte (tous profils)
+| Filtre | TCGdex | État |
+|---|---|---|
+| Nom (FR/EN) | `name=` | ✅ implémenté (bilingue) |
+| Catégorie (Pokémon/Dresseur/Énergie) | `category=` | ✅ |
+| Type d'énergie | `types=` (OR via `|`) | ✅ |
+| Texte de carte | `description=` / `effect=` | 🔜 à brancher |
+
+### B. Pokémon (joueurs)
+| Filtre | TCGdex | État |
+|---|---|---|
+| Stage : Basic / Niveau 1 / Niveau 2 | `stage=` | ✅ |
+| Mécanique : ex / V / VMAX / VSTAR | `suffix=ex\|V`, `stage=VMAX\|VSTAR` | ✅ (ajouté) |
+| Mécanique : GX / Radiant / Prism / ACE SPEC | `suffix=` / rareté | 🔜 |
+| Label : Tera / Ancient / Future / Fusion… | n/d direct | 🔜 (heuristique) |
+| HP min/max | `hp=gte:/lte:` | ✅ supporté, UI 🔜 |
+| Coût de retraite | `retreat=` | ✅ supporté, UI 🔜 |
+| A un Talent | `abilities=notnull:` | ✅ supporté, UI 🔜 |
+| Faiblesse (par type) | `weaknesses.type=` | ❌ non supporté |
+| Numéro Pokédex | `dexId=` | ❌ peu fiable |
+
+### C. Collection (collectionneurs)
+| Filtre | TCGdex | État |
+|---|---|---|
+| Série | déduite (préfixe + pokemontcg) | ✅ (SetPicker) |
+| Extension | `set=eq:` | ✅ |
+| Rareté | `rarity=eq:` (OR) | ✅ liste réelle élargie |
+| Regulation mark | `regulationMark=` | ✅ |
+| Illustrateur | `illustrator=` (contient) | ✅ supporté, UI 🔜 |
+| Variante (normal/holo/reverse) | `variants.*` | 🔜 |
+| Langue / état / possession | — | 🔜 (Phase 5 collection) |
+
+### D. Tournoi
+| Filtre | TCGdex | État |
+|---|---|---|
+| Légal Standard / Expanded | `legal.standard/expanded=true` | ✅ |
+| Format / rotation regulation mark | `regulationMark=` | ✅ |
+
+### Logique du jeu retenue
+- Un Pokémon n'est jamais un Dresseur : mélanger un stage (Pokémon) et un
+  trainerType (Dresseur) donne un résultat vide — attendu.
+- `ex`/`V` (suffix) se combinent avec un stage (ex Basic, V…) → AND utile.
+- Rareté = liste **exacte** TCGdex (sinon `eq:` ne matche rien — bug corrigé :
+  « Hyper rare » fonctionne, valeurs vérifiées par sondage API).
+
+### Roadmap filtres
+1. Brancher **HP min/max**, **coût de retraite**, **« a un Talent »**,
+   **illustrateur** (champs déjà supportés par l'API).
+2. **Recherche texte de carte** (`description`/effet).
+3. **Variantes possédées** + langue/état (avec la collection, Phase 5).
+4. **Tags fonctionnels** (draw/gust/switch/recovery) — dérivés du texte, V2.
+
+> Bug corrigé : avec un filtre, on n'utilise plus le mode « classeur » set par
+> set (qui restait bloqué à 0 quand les premiers sets ne contenaient aucune
+> carte correspondante). On repasse en mode plat : le serveur ne renvoie que
+> les cartes correspondantes, triées ensuite par set récent → ancien + numéro.
