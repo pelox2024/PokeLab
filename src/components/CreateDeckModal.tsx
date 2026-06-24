@@ -5,7 +5,7 @@ import { useDeckStore } from "../store/deckStore";
 import type { DeckCard, DeckFormat } from "../db/schema";
 import { parseDecklist } from "../lib/deckParser";
 import { resolveDecklist } from "../api/decklistResolver";
-import type { ResolvedLine } from "../api/decklistResolver";
+import type { ResolvedLine, ResolveStrategy } from "../api/decklistResolver";
 import { fr } from "../lib/i18n";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
@@ -22,6 +22,13 @@ const FORMAT_OPTIONS = [
   { value: "unlimited", label: fr.format.unlimited },
 ];
 
+const STRATEGY_OPTIONS: { value: ResolveStrategy; label: string }[] = [
+  { value: "latest", label: "Impression la plus récente" },
+  { value: "cheapest", label: "La moins chère" },
+  { value: "priciest", label: "La plus chère" },
+  { value: "exact", label: "Exacte (set + n° uniquement)" },
+];
+
 export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const load = useDeckStore((s) => s.load);
@@ -30,6 +37,7 @@ export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () 
   const [name, setName] = useState("Nouveau deck");
   const [format, setFormat] = useState<DeckFormat>("standard");
   const [importText, setImportText] = useState("");
+  const [strategy, setStrategy] = useState<ResolveStrategy>("latest");
   const [resolving, setResolving] = useState(false);
   const [resolved, setResolved] = useState<ResolvedLine[] | null>(null);
   const [unparsed, setUnparsed] = useState<string[]>([]);
@@ -64,7 +72,7 @@ export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () 
     }
     setResolving(true);
     try {
-      setResolved(await resolveDecklist(parsed.lines));
+      setResolved(await resolveDecklist(parsed.lines, strategy));
     } finally {
       setResolving(false);
     }
@@ -81,12 +89,18 @@ export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () 
       setCode: l.setCode,
       number: l.number,
       imageUrl: l.imageUrl,
+      rarity: l.rarity,
+      subtypes: l.subtypes,
+      suffix: l.suffix,
+      hp: l.hp,
+      types: l.types,
       manual: !l.resolved,
     }));
     await go(cards);
   };
 
   const resolvedCount = resolved?.filter((l) => l.resolved).length ?? 0;
+  const approxCount = resolved?.filter((l) => l.approx).length ?? 0;
   const totalCards = resolved?.reduce((n, l) => n + l.qty, 0) ?? 0;
   const unresolved = resolved?.filter((l) => !l.resolved) ?? [];
 
@@ -137,6 +151,17 @@ export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () 
         ) : (
           <>
             <p className={styles.hint}>Collez une decklist (PTCG Live, Limitless…) puis analysez-la.</p>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Cartes introuvables → choisir</span>
+              <Select
+                options={STRATEGY_OPTIONS}
+                value={strategy}
+                onChange={(e) => {
+                  setStrategy(e.target.value as ResolveStrategy);
+                  setResolved(null);
+                }}
+              />
+            </label>
             <textarea
               className={styles.area}
               value={importText}
@@ -159,6 +184,7 @@ export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () 
               <div className={styles.report}>
                 <span className={styles.reportOk}>
                   {resolvedCount}/{resolved.length} lignes reconnues
+                  {approxCount > 0 ? ` · ${approxCount} par nom` : ""}
                 </span>
                 {unresolved.length > 0 && (
                   <div className={styles.unresolved}>
