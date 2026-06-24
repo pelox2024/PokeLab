@@ -45,28 +45,55 @@
 
 /* Mobile deck-first : le deck occupe l'écran */
 .deckMain {
-  height: calc(100dvh - var(--nav-h) - 170px);
-  min-height: 320px;
+  height: calc(100dvh - var(--nav-h) - 190px);
+  min-height: 300px;
 }
 
-/* FAB "Ajouter des cartes" (centré, zone du pouce) */
-.fab {
+/* Barre d'action collée en bas (zone du pouce) */
+.addBar {
   position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(22px + env(safe-area-inset-bottom));
-  z-index: 70;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 75;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(7, 9, 15, 0.86);
+  border-top: 1px solid var(--border-faint);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+
+.addBtn {
+  flex: 1;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 13px 24px;
+  padding: 14px 20px;
   border: none;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-lg);
   font-family: inherit;
   font-size: var(--fs-md);
   font-weight: 700;
   color: #fff;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: var(--shadow-strong), var(--shadow-glow);
+  box-shadow: var(--shadow-glow);
+  cursor: pointer;
+}
+
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: var(--danger-soft);
+  color: var(--danger);
   cursor: pointer;
 }

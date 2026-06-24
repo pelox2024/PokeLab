@@ -109,7 +109,7 @@ export function DeckPanel({ onClose, embedded }: { onClose?: () => void; embedde
         )}
       </div>
 
-      {cards.length > 0 && (
+      {cards.length > 0 && !embedded && (
         <footer className={styles.footer}>
           <button type="button" className={styles.clearBtn} onClick={clear}>
             <Icon name="close" size={14} />

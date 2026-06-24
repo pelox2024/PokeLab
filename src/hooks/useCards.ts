@@ -39,7 +39,12 @@ export interface BrowsePage {
  * Mode "classeur" : charge les cartes set par set (le plus récent d'abord),
  * triées par numéro croissant. Utilisé pour l'exploration par défaut.
  */
-export function useCardBrowse(orderedSets: SetInfo[], keySig: string, enabled: boolean) {
+export function useCardBrowse(
+  orderedSets: SetInfo[],
+  filters: CardFilters,
+  keySig: string,
+  enabled: boolean,
+) {
   return useInfiniteQuery<BrowsePage>({
     queryKey: ["browse", keySig],
     enabled: enabled && orderedSets.length > 0,
@@ -47,7 +52,11 @@ export function useCardBrowse(orderedSets: SetInfo[], keySig: string, enabled: b
     queryFn: async ({ pageParam }) => {
       const index = pageParam as number;
       const set = orderedSets[index];
-      const page = await activeProvider.searchCards({ filters: { set: set.id }, pageSize: 600 });
+      // Les filtres actifs s'appliquent à chaque set (AND).
+      const page = await activeProvider.searchCards({
+        filters: { ...filters, set: set.id },
+        pageSize: 600,
+      });
       const items = [...page.items].sort(
         (a, b) => numberKey(parseCardId(a.providerId).localId) - numberKey(parseCardId(b.providerId).localId),
       );

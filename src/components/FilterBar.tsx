@@ -269,6 +269,17 @@ export function FilterBar({
             </>
           }
         >
+          {hasActive && (
+            <div className={styles.sheetActive}>
+              {activeChips.map((c) => (
+                <button key={c.id} type="button" className={styles.activeChip} onClick={c.remove}>
+                  {c.icon && <TypeIcon type={c.icon} size="sm" withBg={false} />}
+                  {c.label}
+                  <Icon name="close" size={12} />
+                </button>
+              ))}
+            </div>
+          )}
           {renderGroups(true)}
         </BottomSheet>
       )}
@@ -277,17 +288,6 @@ export function FilterBar({
       {bottomBar &&
         createPortal(
           <div className={styles.bottomBar}>
-            {hasActive && (
-              <div className={styles.bottomChips}>
-                {activeChips.map((c) => (
-                  <button key={c.id} type="button" className={styles.activeChip} onClick={c.remove}>
-                    {c.icon && <TypeIcon type={c.icon} size="sm" withBg={false} />}
-                    {c.label}
-                    <Icon name="close" size={12} />
-                  </button>
-                ))}
-              </div>
-            )}
             <div className={styles.bottomRow}>
               <Input
                 className={styles.bottomSearch}

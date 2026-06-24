@@ -31,7 +31,8 @@ export function Builder() {
   const queryClient = useQueryClient();
   const isMobile = useMediaQuery("(max-width: 980px)");
 
-  const { deckId, versionId, name, format, cards, load, setName, setFormat, add, enrich } = useDeckStore();
+  const { deckId, versionId, name, format, cards, load, setName, setFormat, add, enrich, clearCards } =
+    useDeckStore();
 
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<CardFilters>({});
@@ -164,10 +165,22 @@ export function Builder() {
         <div className={styles.deckMain}>
           <DeckPanel embedded />
         </div>
-        <button type="button" className={styles.fab} onClick={() => setDrawer(true)}>
-          <Icon name="plus" size={18} />
-          {fr.builder.addCards}
-        </button>
+        <div className={styles.addBar}>
+          {cards.length > 0 && (
+            <button
+              type="button"
+              className={styles.clearBtn}
+              onClick={() => confirm("Vider le deck ?") && clearCards()}
+              aria-label={fr.builder.clear}
+            >
+              <Icon name="close" size={18} />
+            </button>
+          )}
+          <button type="button" className={styles.addBtn} onClick={() => setDrawer(true)}>
+            <Icon name="plus" size={18} />
+            {fr.builder.addCards}
+          </button>
+        </div>
         <BottomSheet open={drawer} onClose={() => setDrawer(false)} title={fr.builder.addCards}>
           {explorer}
         </BottomSheet>

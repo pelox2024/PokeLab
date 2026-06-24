@@ -1,16 +1,22 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { CardBrief } from "../api/types";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { CardTile } from "./CardTile";
 import { Skeleton } from "./ui/Skeleton";
 import styles from "./CardGrid.module.css";
 
 export type GridSize = "compact" | "normal" | "large";
 
-const COL_MIN: Record<GridSize, string> = {
-  compact: "116px",
-  normal: "150px",
-  large: "190px",
+const COL_MIN_DESKTOP: Record<GridSize, string> = {
+  compact: "128px",
+  normal: "162px",
+  large: "205px",
+};
+const COL_MIN_MOBILE: Record<GridSize, string> = {
+  compact: "100px",
+  normal: "140px",
+  large: "185px",
 };
 
 export interface CardSection {
@@ -44,6 +50,8 @@ export function CardGrid({
   getQty,
 }: CardGridProps) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const isMobile = useMediaQuery("(max-width: 640px)");
+  const colMin = (isMobile ? COL_MIN_MOBILE : COL_MIN_DESKTOP)[size];
 
   useEffect(() => {
     if (!onReachEnd) return;
@@ -59,7 +67,7 @@ export function CardGrid({
     return () => obs.disconnect();
   }, [onReachEnd]);
 
-  const gridStyle = { ["--col-min" as string]: COL_MIN[size] } as CSSProperties;
+  const gridStyle = { ["--col-min" as string]: colMin } as CSSProperties;
 
   const renderTile = (card: CardBrief) => (
     <CardTile

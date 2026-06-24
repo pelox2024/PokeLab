@@ -23,19 +23,6 @@ const DENSITY_OPTIONS: { value: GridSize; label: string }[] = [
   { value: "large", label: fr.cards.densityLarge },
 ];
 
-function hasFacetFilters(f: CardFilters): boolean {
-  return !!(
-    f.categories?.length ||
-    f.types?.length ||
-    f.subtypes?.length ||
-    f.rarities?.length ||
-    f.regulationMarks?.length ||
-    f.set ||
-    f.standardLegal ||
-    f.expandedLegal
-  );
-}
-
 export function Cards() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<CardFilters>({});
@@ -46,17 +33,18 @@ export function Cards() {
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
 
-  // Mode "classeur" : exploration pure (sans recherche ni filtre), tri par set.
-  const binderMode =
-    !debounced.trim() && !hasFacetFilters(filters) && (sort === "set-recent" || sort === "set-old");
+  // Mode "classeur" : dès qu'on trie par set (avec ou sans filtres), on charge
+  // set par set pour garder l'ordre set récent -> ancien + numéro croissant.
+  const binderMode = !debounced.trim() && (sort === "set-recent" || sort === "set-old");
 
-  const orderedSets = useMemo(
-    () => orderSetsByRecency(sets ?? [], sort !== "set-old"),
-    [sets, sort],
-  );
+  const orderedSets = useMemo(() => {
+    const all = orderSetsByRecency(sets ?? [], sort !== "set-old");
+    return filters.set ? all.filter((s) => s.id === filters.set) : all;
+  }, [sets, sort, filters.set]);
   const setRank = useMemo(() => buildSetRankMap(sets ?? []), [sets]);
 
-  const browse = useCardBrowse(orderedSets, `${sort}:${orderedSets.length}`, binderMode);
+  const browseKey = `${sort}:${orderedSets.length}:${JSON.stringify(filters)}`;
+  const browse = useCardBrowse(orderedSets, filters, browseKey, binderMode);
   const flat = useCardSearch(debounced, filters, sort, !binderMode);
   const q = binderMode ? browse : flat;
 
