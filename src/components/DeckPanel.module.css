@@ -190,102 +190,150 @@
   background: linear-gradient(180deg, var(--surface-strong), transparent);
 }
 
-.row {
-  display: flex;
-  align-items: center;
+/* ---- Deck visuel : grille de tuiles ---- */
+.pileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
   gap: 10px;
-  padding: 6px 4px;
-  border-radius: var(--radius-sm);
 }
 
-.row:hover {
-  background: var(--surface-hover);
-}
-
-.thumb {
+.pile {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 4px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pileImg {
+  position: relative;
+  aspect-ratio: 245 / 342;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--surface-soft);
-  color: var(--text-faint);
+  border: 1px solid var(--border-faint);
+  cursor: pointer;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
 }
 
-.thumb img {
+.pileImg:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+}
+
+.pileImg img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.rowMain {
-  flex: 1;
-  min-width: 0;
+.pileFallback {
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex-direction: column;
-}
-
-.rowName {
-  font-size: var(--fs-sm);
-  font-weight: 550;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rowMeta {
-  font-size: var(--fs-xs);
+  align-items: center;
+  justify-content: center;
   color: var(--text-faint);
 }
 
-.stepper {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
+.pileQty {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-.stepper button {
+.pileRemove {
+  position: absolute;
+  top: 4px;
+  left: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(7, 9, 15, 0.7);
+  color: #fff;
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity var(--t-fast), background var(--t-fast);
+}
+
+.pileRemove:hover {
+  background: var(--danger);
+}
+
+.pileBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 5px;
+  background: linear-gradient(180deg, transparent, rgba(7, 9, 15, 0.92));
+  opacity: 1;
+  transition: opacity var(--t-fast);
+}
+
+/* Sur appareils à survol (desktop), on cache les contrôles jusqu'au survol
+   pour laisser respirer l'illustration. Sur tactile, ils restent visibles. */
+@media (hover: hover) and (pointer: fine) {
+  .pileRemove,
+  .pileBar {
+    opacity: 0;
+  }
+  .pileImg:hover .pileRemove,
+  .pileImg:hover .pileBar,
+  .pile:focus-within .pileRemove,
+  .pile:focus-within .pileBar {
+    opacity: 1;
+  }
+}
+
+.pileBar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-glass);
-  background: var(--surface-glass);
-  color: var(--text);
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
   cursor: pointer;
 }
 
-.stepper button:hover {
-  background: var(--surface-hover);
+.pileMinus:hover {
+  background: var(--danger) !important;
 }
 
-.minus {
-  color: var(--danger) !important;
-  border-color: rgba(248, 113, 113, 0.3) !important;
-}
-.minus:hover {
-  background: var(--danger-soft) !important;
+.pilePlus:hover {
+  background: var(--success) !important;
 }
 
-.plus {
-  color: var(--success) !important;
-  border-color: rgba(52, 211, 153, 0.3) !important;
-}
-.plus:hover {
-  background: var(--success-soft) !important;
-}
-
-.qty {
-  min-width: 22px;
-  text-align: center;
+.pileBarQty {
   font-size: var(--fs-sm);
-  font-weight: 700;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.pileName {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .footer {

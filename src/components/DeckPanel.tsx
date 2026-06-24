@@ -9,35 +9,83 @@ import styles from "./DeckPanel.module.css";
 
 type DeckTab = "list" | "stats";
 
-function CardRow({ card }: { card: DeckCard }) {
+/** Déduit le providerId TCGdex ("sv08-001") depuis l'id global ("tcgdex:sv08-001"). */
+function toProviderId(cardId?: string): string | undefined {
+  if (!cardId) return undefined;
+  const i = cardId.indexOf(":");
+  return i === -1 ? cardId : cardId.slice(i + 1);
+}
+
+/** Tuile visuelle d'une carte du deck : image + quantité, contrôles au survol
+ *  (− qté +, retirer) et clic sur l'image pour les détails. Sur écran tactile,
+ *  les contrôles restent visibles (pas de survol). */
+function DeckCardTile({ card, onInspect }: { card: DeckCard; onInspect?: (pid: string) => void }) {
   const setQty = useDeckStore((s) => s.setQty);
+  const providerId = toProviderId(card.cardId);
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+
   return (
-    <div className={styles.row}>
-      <span className={styles.thumb}>
-        {card.imageUrl ? <img src={card.imageUrl} alt="" loading="lazy" /> : <Icon name="cards" size={14} />}
-      </span>
-      <span className={styles.rowMain}>
-        <span className={styles.rowName}>{card.name}</span>
-        {(card.setCode || card.number) && (
-          <span className={styles.rowMeta}>
-            {card.setCode?.toUpperCase()} {card.number}
+    <div className={styles.pile}>
+      <div
+        className={styles.pileImg}
+        role={onInspect && providerId ? "button" : undefined}
+        onClick={() => providerId && onInspect?.(providerId)}
+        title={card.name}
+      >
+        {card.imageUrl ? (
+          <img src={card.imageUrl} alt={card.name} loading="lazy" decoding="async" />
+        ) : (
+          <span className={styles.pileFallback}>
+            <Icon name="cards" size={18} />
           </span>
         )}
-      </span>
-      <span className={styles.stepper}>
-        <button type="button" className={styles.minus} onClick={() => setQty(card.id, card.quantity - 1)} aria-label="Retirer">
-          <Icon name="minus" size={14} />
+        <span className={styles.pileQty}>×{card.quantity}</span>
+        <button
+          type="button"
+          className={styles.pileRemove}
+          onClick={(e) => {
+            stop(e);
+            setQty(card.id, 0);
+          }}
+          aria-label="Retirer la carte"
+          title="Retirer"
+        >
+          <Icon name="close" size={12} />
         </button>
-        <span className={styles.qty}>{card.quantity}</span>
-        <button type="button" className={styles.plus} onClick={() => setQty(card.id, card.quantity + 1)} aria-label="Ajouter">
-          <Icon name="plus" size={14} />
-        </button>
-      </span>
+        <div className={styles.pileBar} onClick={stop}>
+          <button
+            type="button"
+            className={styles.pileMinus}
+            onClick={() => setQty(card.id, card.quantity - 1)}
+            aria-label="Moins"
+          >
+            <Icon name="minus" size={13} />
+          </button>
+          <span className={styles.pileBarQty}>{card.quantity}</span>
+          <button
+            type="button"
+            className={styles.pilePlus}
+            onClick={() => setQty(card.id, card.quantity + 1)}
+            aria-label="Plus"
+          >
+            <Icon name="plus" size={13} />
+          </button>
+        </div>
+      </div>
+      <span className={styles.pileName}>{card.name}</span>
     </div>
   );
 }
 
-export function DeckPanel({ onClose, embedded }: { onClose?: () => void; embedded?: boolean }) {
+export function DeckPanel({
+  onClose,
+  embedded,
+  onInspect,
+}: {
+  onClose?: () => void;
+  embedded?: boolean;
+  onInspect?: (providerId: string) => void;
+}) {
   const cards = useDeckStore((s) => s.cards);
   const clearCards = useDeckStore((s) => s.clearCards);
   const [showWarnings, setShowWarnings] = useState(false);
@@ -131,9 +179,11 @@ export function DeckPanel({ onClose, embedded }: { onClose?: () => void; embedde
                 <div className={styles.groupHead}>
                   {GROUP_LABEL[g]} · {count}
                 </div>
-                {groups[g].map((c) => (
-                  <CardRow key={c.id} card={c} />
-                ))}
+                <div className={styles.pileGrid}>
+                  {groups[g].map((c) => (
+                    <DeckCardTile key={c.id} card={c} onInspect={onInspect} />
+                  ))}
+                </div>
               </section>
             );
           })

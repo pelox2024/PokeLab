@@ -13,6 +13,7 @@ import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
 import { FilterBar } from "../components/FilterBar";
 import { DeckPanel } from "../components/DeckPanel";
+import { CardDetailModal } from "../components/CardDetailModal";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
@@ -38,6 +39,7 @@ export function Builder() {
   const [filters, setFilters] = useState<CardFilters>({});
   const [sort, setSort] = useState<SortKey>("set-recent");
   const [drawer, setDrawer] = useState(false);
+  const [inspected, setInspected] = useState<string | null>(null);
 
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
@@ -160,7 +162,7 @@ export function Builder() {
       <div className={styles.page}>
         {deckHeader}
         <div className={styles.deckMain}>
-          <DeckPanel embedded />
+          <DeckPanel embedded onInspect={setInspected} />
         </div>
         <div className={styles.addBar}>
           {cards.length > 0 && (
@@ -181,6 +183,7 @@ export function Builder() {
         <BottomSheet open={drawer} onClose={() => setDrawer(false)} title={fr.builder.addCards}>
           {explorer}
         </BottomSheet>
+        <CardDetailModal providerId={inspected} onClose={() => setInspected(null)} onSelectCard={setInspected} />
       </div>
     );
   }
@@ -192,9 +195,10 @@ export function Builder() {
       <div className={styles.layout}>
         {explorer}
         <aside className={styles.aside}>
-          <DeckPanel />
+          <DeckPanel onInspect={setInspected} />
         </aside>
       </div>
+      <CardDetailModal providerId={inspected} onClose={() => setInspected(null)} onSelectCard={setInspected} />
     </div>
   );
 }
