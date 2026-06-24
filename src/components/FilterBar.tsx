@@ -36,6 +36,8 @@ interface FilterBarProps {
   onSearchChange?: (v: string) => void;
   /** Affiche une barre recherche+filtres+tri collée en bas sur mobile. */
   mobileBottomBar?: boolean;
+  /** Mode compact (panneau étroit) : pas de chips inline, tout derrière « Filtres ». */
+  compact?: boolean;
 }
 
 type ArrayKey = "categories" | "types" | "subtypes" | "rarities" | "regulationMarks";
@@ -58,6 +60,7 @@ export function FilterBar({
   search,
   onSearchChange,
   mobileBottomBar,
+  compact,
 }: FilterBarProps) {
   const isMobile = useMediaQuery("(max-width: 720px)");
   const bottomBar = isMobile && !!mobileBottomBar;
@@ -102,9 +105,21 @@ export function FilterBar({
   const hasActive = activeChips.length > 0;
 
   // ---- Groupes de filtres (réutilisés desktop inline + sheet mobile) ----
-  const renderGroups = (includeTypes: boolean): ReactNode => (
+  const renderGroups = (opts: { includeTypes?: boolean; includeCategories?: boolean }): ReactNode => (
     <div className={styles.groups}>
-      {includeTypes && (
+      {opts.includeCategories && (
+        <div className={styles.section}>
+          <span className={styles.sectionLabel}>Catégorie</span>
+          <div className={styles.group}>
+            {CATEGORIES.map((c) => (
+              <Chip key={c.value} active={has("categories", c.value)} onClick={() => toggle("categories", c.value)}>
+                {c.label}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+      {opts.includeTypes && (
         <div className={styles.section}>
           <span className={styles.sectionLabel}>{fr.filters.type}</span>
           <div className={styles.group}>
@@ -190,7 +205,8 @@ export function FilterBar({
     <div className={styles.bar}>
       {/* Ligne rapide (desktop / sheet) */}
       {!bottomBar && (
-      <div className={styles.quick}>
+      <div className={[styles.quick, compact ? styles.quickCompact : ""].filter(Boolean).join(" ")}>
+        {!compact && (
         <div className={styles.quickChips}>
           {CATEGORIES.map((c) => (
             <Chip key={c.value} active={has("categories", c.value)} onClick={() => toggle("categories", c.value)}>
@@ -206,6 +222,7 @@ export function FilterBar({
               </Chip>
             ))}
         </div>
+        )}
 
         <div className={styles.tools}>
           {!isMobile && (
@@ -249,7 +266,9 @@ export function FilterBar({
       {!isMobile && (
         <div className={[styles.advWrap, advanced ? styles.advOpen : ""].filter(Boolean).join(" ")}>
           <div className={styles.advInner}>
-            <div className={styles.advPanel}>{renderGroups(false)}</div>
+            <div className={styles.advPanel}>
+              {renderGroups(compact ? { includeTypes: true, includeCategories: true } : {})}
+            </div>
           </div>
         </div>
       )}
@@ -290,7 +309,7 @@ export function FilterBar({
               ))}
             </div>
           )}
-          {renderGroups(true)}
+          {renderGroups({ includeTypes: true })}
         </BottomSheet>
       )}
 

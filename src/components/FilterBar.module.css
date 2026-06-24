@@ -12,6 +12,12 @@
   flex-wrap: wrap;
 }
 
+/* Mode compact : la barre d'outils (tri + Filtres) occupe toute la largeur. */
+.quickCompact .tools {
+  flex: 1;
+  width: 100%;
+}
+
 .quickChips {
   display: flex;
   flex-wrap: wrap;

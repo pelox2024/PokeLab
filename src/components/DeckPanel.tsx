@@ -23,11 +23,11 @@ const SORT_OPTIONS: { value: DeckSortKey; label: string }[] = [
   { value: "qty", label: "Quantité" },
 ];
 
-/** Déduit le providerId TCGdex ("sv08-001") depuis l'id global ("tcgdex:sv08-001"). */
+/** providerId TCGdex ("sv08-001") depuis l'id global. `undefined` pour les
+ *  cartes non-TCGdex (importées/manuelles) → pas de détail (évite l'erreur). */
 function toProviderId(cardId?: string): string | undefined {
-  if (!cardId) return undefined;
-  const i = cardId.indexOf(":");
-  return i === -1 ? cardId : cardId.slice(i + 1);
+  if (!cardId || !cardId.startsWith("tcgdex:")) return undefined;
+  return cardId.slice("tcgdex:".length);
 }
 
 /** Tuile visuelle d'une carte du deck (vues "grille" et "piles"). Contrôles au

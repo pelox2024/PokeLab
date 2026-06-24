@@ -197,6 +197,7 @@ export function Builder() {
         sets={sets}
         resultCount={count}
         hasMore={hasNextPage}
+        compact
       />
       {isError ? (
         <EmptyState tone="danger" icon={<Icon name="alert" size={26} />} title={fr.states.errorTitle} body={fr.states.errorBody} />

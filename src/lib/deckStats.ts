@@ -237,11 +237,16 @@ export interface DeckGroupOptions {
 
 /** Regroupe par extension (Set) ou série, classé du plus récent au plus ancien. */
 function groupBySetField(cards: DeckCard[], sets: SetInfo[], field: "set" | "series"): DeckGroup[] {
-  const meta = new Map(sets.map((s) => [s.id, s]));
+  // Les cartes ajoutées via le catalogue ont un setCode = id TCGdex ; les cartes
+  // importées ont un setCode = code PTCGO (ex. "TWM"). On résout les deux.
+  const byId = new Map(sets.map((s) => [s.id, s]));
+  const byCode = new Map(sets.filter((s) => s.ptcgoCode).map((s) => [s.ptcgoCode!.toUpperCase(), s]));
+  const lookup = (code?: string) =>
+    code ? byId.get(code) ?? byCode.get(code.toUpperCase()) : undefined;
   const map = new Map<string, { label: string; rank: number; cards: DeckCard[] }>();
   for (const c of cards) {
-    const set = c.setCode ? meta.get(c.setCode) : undefined;
-    const key = field === "series" ? set?.seriesId ?? "_" : c.setCode ?? "_";
+    const set = lookup(c.setCode);
+    const key = field === "series" ? set?.seriesId ?? "_" : set?.id ?? c.setCode ?? "_";
     const label =
       field === "series"
         ? set?.seriesName ?? "Série inconnue"
