@@ -78,6 +78,9 @@ export function Builder() {
         number: rec.number,
         rarity: rec.rarity,
         subtypes: rec.subtypes,
+        suffix: rec.suffix,
+        hp: rec.hp,
+        types: rec.types,
         imageUrl: rec.imageUrl ?? brief.imageUrl,
       });
     } catch {

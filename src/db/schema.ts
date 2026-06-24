@@ -18,7 +18,10 @@ export interface DeckCard {
   number?: string;
   imageUrl?: string;
   rarity?: string;
-  subtypes?: string[];
+  subtypes?: string[]; // [stage, trainerType, energyType]
+  suffix?: string; // ex, V, VMAX, VSTAR…
+  hp?: number;
+  types?: string[]; // types d'énergie (Pokémon)
   rawLine?: string; // ligne brute issue d'un import non résolu
   manual: boolean; // true = carte non résolue via l'API
 }

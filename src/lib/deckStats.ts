@@ -1,5 +1,10 @@
 import type { DeckCard } from "../db/schema";
 
+export interface HpBucket {
+  label: string;
+  count: number;
+}
+
 export interface DeckStats {
   total: number;
   pokemon: number;
@@ -7,6 +12,33 @@ export interface DeckStats {
   energy: number;
   other: number;
   warnings: string[];
+  /** Pokémon par niveau d'évolution. */
+  stages: { basic: number; stage1: number; stage2: number; vEvo: number };
+  /** Dresseurs par type. */
+  trainerKinds: { item: number; supporter: number; stadium: number; tool: number };
+  /** Énergies de base vs spéciales. */
+  energySplit: { basic: number; special: number };
+  /** Mécaniques (ex / V / VMAX / VSTAR). */
+  mechanics: { ex: number; v: number; vmax: number; vstar: number };
+  /** Répartition des types d'énergie (Pokémon), triée. */
+  typeCounts: { type: string; count: number }[];
+  /** Histogramme de PV (Pokémon) — l'équivalent « courbe » du JCC. */
+  hpBuckets: HpBucket[];
+  /** PV moyen pondéré des Pokémon connus. */
+  avgHp: number;
+}
+
+// Tranches de PV (bornes basses incluses). Couvre tout le spectre moderne.
+const HP_BUCKETS: { label: string; min: number; max: number }[] = [
+  { label: "≤70", min: 0, max: 70 },
+  { label: "80-110", min: 80, max: 110 },
+  { label: "120-150", min: 120, max: 150 },
+  { label: "160-200", min: 160, max: 200 },
+  { label: "210+", min: 210, max: Infinity },
+];
+
+function has(c: DeckCard, value: string): boolean {
+  return !!c.subtypes?.some((s) => s.toLowerCase() === value.toLowerCase());
 }
 
 const BASIC_ENERGY =
@@ -52,7 +84,70 @@ export function computeStats(cards: DeckCard[]): DeckStats {
   const basics = cards.filter((c) => c.category === "Pokemon" && c.subtypes?.includes("Basic")).reduce((s, c) => s + c.quantity, 0);
   if (pokemon > 0 && basics === 0) warnings.push("Aucun Pokémon de base détecté");
 
-  return { total, pokemon, trainer, energy, other, warnings };
+  // ---- Analyses détaillées ----
+  const stages = { basic: 0, stage1: 0, stage2: 0, vEvo: 0 };
+  const trainerKinds = { item: 0, supporter: 0, stadium: 0, tool: 0 };
+  const energySplit = { basic: 0, special: 0 };
+  const mechanics = { ex: 0, v: 0, vmax: 0, vstar: 0 };
+  const typeMap = new Map<string, number>();
+  const hpCounts = HP_BUCKETS.map(() => 0);
+  let hpSum = 0;
+  let hpQty = 0;
+
+  for (const c of cards) {
+    const q = c.quantity;
+    if (c.category === "Pokemon") {
+      if (has(c, "Stage2")) stages.stage2 += q;
+      else if (has(c, "Stage1")) stages.stage1 += q;
+      else if (has(c, "VMAX") || has(c, "VSTAR")) stages.vEvo += q;
+      else stages.basic += q;
+
+      const suffix = c.suffix?.toLowerCase();
+      if (suffix === "ex") mechanics.ex += q;
+      if (suffix === "v") mechanics.v += q;
+      if (has(c, "VMAX")) mechanics.vmax += q;
+      if (has(c, "VSTAR")) mechanics.vstar += q;
+
+      for (const t of c.types ?? []) typeMap.set(t, (typeMap.get(t) ?? 0) + q);
+
+      if (c.hp != null && c.hp > 0) {
+        hpSum += c.hp * q;
+        hpQty += q;
+        const idx = HP_BUCKETS.findIndex((b) => c.hp! >= b.min && c.hp! <= b.max);
+        if (idx >= 0) hpCounts[idx] += q;
+      }
+    } else if (c.category === "Trainer") {
+      if (has(c, "Supporter")) trainerKinds.supporter += q;
+      else if (has(c, "Stadium")) trainerKinds.stadium += q;
+      else if (has(c, "Tool")) trainerKinds.tool += q;
+      else trainerKinds.item += q;
+    } else if (c.category === "Energy") {
+      if (isBasicEnergy(c)) energySplit.basic += q;
+      else energySplit.special += q;
+    }
+  }
+
+  const typeCounts = [...typeMap.entries()]
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count);
+  const hpBuckets: HpBucket[] = HP_BUCKETS.map((b, i) => ({ label: b.label, count: hpCounts[i] }));
+  const avgHp = hpQty > 0 ? Math.round(hpSum / hpQty) : 0;
+
+  return {
+    total,
+    pokemon,
+    trainer,
+    energy,
+    other,
+    warnings,
+    stages,
+    trainerKinds,
+    energySplit,
+    mechanics,
+    typeCounts,
+    hpBuckets,
+    avgHp,
+  };
 }
 
 export type DeckGroupKey = "Pokemon" | "Trainer" | "Energy" | "Unknown";

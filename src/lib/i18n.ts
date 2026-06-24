@@ -133,6 +133,8 @@ export const fr = {
     format: "Format",
     newDeck: "Nouveau deck",
     addToDeck: "Ajouter au deck",
+    tabList: "Liste",
+    tabStats: "Statistiques",
     noDeckTitle: "Aucun deck ouvert",
     noDeckBody: "Créez un deck ou ouvrez-en un depuis « Mes decks ».",
     create: "Créer un deck",

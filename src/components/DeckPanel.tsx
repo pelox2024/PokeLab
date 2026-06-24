@@ -4,7 +4,10 @@ import { computeStats, groupByCategory, GROUP_LABEL, GROUP_ORDER } from "../lib/
 import type { DeckCard } from "../db/schema";
 import { fr } from "../lib/i18n";
 import { Icon } from "./ui/Icon";
+import { DeckStats } from "./DeckStats";
 import styles from "./DeckPanel.module.css";
+
+type DeckTab = "list" | "stats";
 
 function CardRow({ card }: { card: DeckCard }) {
   const setQty = useDeckStore((s) => s.setQty);
@@ -38,6 +41,7 @@ export function DeckPanel({ onClose, embedded }: { onClose?: () => void; embedde
   const cards = useDeckStore((s) => s.cards);
   const clearCards = useDeckStore((s) => s.clearCards);
   const [showWarnings, setShowWarnings] = useState(false);
+  const [tab, setTab] = useState<DeckTab>("list");
 
   const stats = computeStats(cards);
   const groups = groupByCategory(cards);
@@ -89,9 +93,36 @@ export function DeckPanel({ onClose, embedded }: { onClose?: () => void; embedde
         )}
       </header>
 
+      {cards.length > 0 && (
+        <div className={styles.tabs} role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "list"}
+            className={[styles.tab, tab === "list" ? styles.tabActive : ""].join(" ")}
+            onClick={() => setTab("list")}
+          >
+            <Icon name="decks" size={14} />
+            {fr.builder.tabList}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "stats"}
+            className={[styles.tab, tab === "stats" ? styles.tabActive : ""].join(" ")}
+            onClick={() => setTab("stats")}
+          >
+            <Icon name="chart" size={14} />
+            {fr.builder.tabStats}
+          </button>
+        </div>
+      )}
+
       <div className={styles.body}>
         {cards.length === 0 ? (
           <div className={styles.empty}>{fr.builder.emptyDeck}</div>
+        ) : tab === "stats" ? (
+          <DeckStats stats={stats} />
         ) : (
           GROUP_ORDER.filter((g) => groups[g].length > 0).map((g) => {
             const count = groups[g].reduce((s, c) => s + c.quantity, 0);
