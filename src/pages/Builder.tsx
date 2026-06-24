@@ -92,6 +92,48 @@ export function Builder() {
     return () => clearTimeout(t);
   }, [deckId, versionId, name, format, cards]);
 
+  // Ré-enrichissement de fond : les decks rechargés (ou anciens) peuvent manquer
+  // de PV / types / suffixe → statistiques fausses. On complète chaque carte
+  // TCGdex une fois par session (requête mise en cache, idempotente).
+  const enrichRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const todo = cards.filter(
+      (c) => c.cardId?.startsWith("tcgdex:") && !enrichRef.current.has(c.cardId),
+    );
+    if (todo.length === 0) return;
+    let cancelled = false;
+    for (const c of todo) enrichRef.current.add(c.cardId!);
+    void Promise.all(
+      todo.map(async (c) => {
+        const pid = c.cardId!.slice(c.cardId!.indexOf(":") + 1);
+        try {
+          const rec = await queryClient.fetchQuery<CardRecord>({
+            queryKey: ["cards", "detail", pid],
+            queryFn: () => activeProvider.getCard(pid),
+            staleTime: 30 * 60 * 1000,
+          });
+          if (cancelled) return;
+          enrich(c.cardId!, {
+            category: rec.category,
+            setCode: rec.setId,
+            number: rec.number,
+            rarity: rec.rarity,
+            subtypes: rec.subtypes,
+            suffix: rec.suffix,
+            hp: rec.hp,
+            types: rec.types,
+            imageUrl: rec.imageUrl ?? c.imageUrl,
+          });
+        } catch {
+          /* best-effort */
+        }
+      }),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [cards, queryClient, enrich]);
+
   const addToDeck = async (brief: CardBrief) => {
     add({ cardId: brief.id, name: brief.name, number: brief.localId, imageUrl: brief.imageUrl });
     try {
