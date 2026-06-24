@@ -1,41 +1,187 @@
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
-.section {
+/* ---- Carte de stat ---- */
+.card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-faint);
 }
 
-.sectionTitle {
+.cardTitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   font-size: var(--fs-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--accent);
+  color: var(--text-faint);
 }
 
-/* ---- Barre empilée ---- */
-.stack {
+.cardHint {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 650;
+  color: var(--text-muted);
+}
+
+.muted {
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+}
+
+/* ---- Composition : donut + légende ---- */
+.compRow {
   display: flex;
-  height: 10px;
+  align-items: center;
+  gap: 14px;
+}
+
+.donutWrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.donut {
+  width: 100%;
+  height: 100%;
+  transform: rotate(0deg);
+}
+
+.donutTrack {
+  fill: none;
+  stroke: var(--surface-strong);
+  stroke-width: 3.6;
+}
+
+.donutCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.donutNum {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.donutSub {
+  margin-top: 2px;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.legendItem b {
+  margin-left: auto;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.legendDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ---- Métrique (mulligan) ---- */
+.metricRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.metricBig {
+  font-size: 2.1rem;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.metricUnit {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-left: 1px;
+}
+
+.metricWord {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gauge {
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-strong);
+  overflow: hidden;
+}
+
+.gaugeFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width var(--t-med);
+}
+
+.note {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  line-height: 1.35;
+}
+
+/* ---- Barre segmentée ---- */
+.segbar {
+  display: flex;
+  height: 9px;
   border-radius: var(--radius-pill);
   overflow: hidden;
-  background: var(--surface-soft);
+  background: var(--surface-strong);
 }
 
-.stackSeg {
+.segbarPart {
   height: 100%;
 }
 
-.stackSeg + .stackSeg {
+.segbarPart + .segbarPart {
   box-shadow: inset 1px 0 0 rgba(7, 9, 15, 0.5);
 }
 
-/* ---- Tally (libellé + valeur) ---- */
+/* ---- Tally ---- */
 .tally {
   display: flex;
   flex-wrap: wrap;
@@ -48,7 +194,7 @@
   gap: 5px;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: var(--surface-soft);
+  background: var(--surface-strong);
   border: 1px solid var(--border-faint);
   font-size: var(--fs-xs);
   color: var(--text-muted);
@@ -66,7 +212,7 @@
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   gap: 6px;
-  height: 96px;
+  height: 92px;
   align-items: end;
 }
 
@@ -104,11 +250,11 @@
 }
 
 .histoBar[data-empty] {
-  background: var(--surface-soft);
+  background: var(--surface-strong);
 }
 
 .histoLabel {
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   color: var(--text-faint);
   white-space: nowrap;
 }
@@ -126,7 +272,7 @@
   gap: 5px;
   padding: 4px 9px 4px 6px;
   border-radius: var(--radius-pill);
-  background: var(--surface-soft);
+  background: var(--surface-strong);
   border: 1px solid var(--border-faint);
   font-size: var(--fs-sm);
   font-weight: 700;
