@@ -42,6 +42,7 @@ export function ExportModal({ open, onClose, cards, sets, deckName }: Props) {
 
   return (
     <Modal open={open} onClose={onClose} labelledBy="exportTitle" size="md">
+      <div className={styles.content}>
       <h2 id="exportTitle" className={styles.title}>
         Exporter / Partager
       </h2>
@@ -58,6 +59,7 @@ export function ExportModal({ open, onClose, cards, sets, deckName }: Props) {
             Télécharger .txt
           </Button>
         </div>
+      </div>
       </div>
     </Modal>
   );

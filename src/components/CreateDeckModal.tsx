@@ -106,6 +106,7 @@ export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () 
 
   return (
     <Modal open={open} onClose={close} labelledBy="createTitle" size="md">
+      <div className={styles.content}>
       <h2 id="createTitle" className={styles.title}>
         Créer un deck
       </h2>
@@ -208,6 +209,7 @@ export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () 
             )}
           </>
         )}
+      </div>
       </div>
     </Modal>
   );
