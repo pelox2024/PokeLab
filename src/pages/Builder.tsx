@@ -3,10 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { activeProvider } from "../api/cardApi";
 import type { CardBrief, CardFilters, CardRecord, SortKey } from "../api/types";
 import type { DeckFormat } from "../db/schema";
-import { useCardSearch, useSets } from "../hooks/useCards";
+import { useSets } from "../hooks/useCards";
+import { useCardExplorer } from "../hooks/useCardExplorer";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useDebounce } from "../lib/useDebounce";
-import { buildSetRankMap, sortCards } from "../lib/cardSort";
 import { createDeck, persistDeck } from "../db/decks";
 import { useDeckStore } from "../store/deckStore";
 import { fr } from "../lib/i18n";
@@ -41,13 +41,8 @@ export function Builder() {
 
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useCardSearch(debounced, filters, sort);
-
-  const setRank = useMemo(() => buildSetRankMap(sets ?? []), [sets]);
-  const gridCards: CardBrief[] = useMemo(() => {
-    const flat = data?.pages.flatMap((p) => p.items) ?? [];
-    return sortCards(flat, sort, setRank);
-  }, [data, sort, setRank]);
+  const { binderMode, sections, flatCards, count, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useCardExplorer(debounced, filters, sort, sets, { excludePocket: true });
 
   const qtyByCard = useMemo(() => {
     const m = new Map<string, number>();
@@ -125,26 +120,25 @@ export function Builder() {
         sort={sort}
         onSortChange={setSort}
         sets={sets}
-        resultCount={gridCards.length}
+        resultCount={count}
         hasMore={hasNextPage}
       />
       {isError ? (
         <EmptyState tone="danger" icon={<Icon name="alert" size={26} />} title={fr.states.errorTitle} body={fr.states.errorBody} />
       ) : isLoading ? (
         <CardGrid cards={[]} skeletonCount={18} size="compact" />
-      ) : gridCards.length === 0 ? (
+      ) : count === 0 && !hasNextPage ? (
         <EmptyState icon={<Icon name="empty" size={26} />} title={fr.states.emptyTitle} body={fr.states.emptyBody} />
       ) : (
         <CardGrid
-          cards={gridCards}
+          cards={binderMode ? undefined : flatCards}
+          sections={binderMode ? sections : undefined}
           size="compact"
           rarityHint={filters.rarities}
           getQty={(c) => qtyByCard.get(c.id) ?? 0}
           onCardClick={addToDeck}
-          loadingMore={isFetchingNextPage}
-          onReachEnd={() => {
-            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-          }}
+          loadingMore={isFetchingNextPage || (count === 0 && hasNextPage)}
+          onReachEnd={fetchNextPage}
         />
       )}
     </div>

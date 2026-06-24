@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useCardBrowse, useCardSearch, useSets } from "../hooks/useCards";
+import { useSets } from "../hooks/useCards";
+import { useCardExplorer } from "../hooks/useCardExplorer";
 import { useDebounce } from "../lib/useDebounce";
-import { buildSetRankMap, orderSetsByRecency, parseCardId, sortCards } from "../lib/cardSort";
 import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
-import type { CardSection } from "../components/CardGrid";
 import type { GridSize } from "../components/CardGrid";
 import { FilterBar } from "../components/FilterBar";
 import { CardDetailModal } from "../components/CardDetailModal";
@@ -14,7 +13,7 @@ import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Segmented } from "../components/ui/Segmented";
 import { Icon } from "../components/ui/Icon";
-import type { CardBrief, CardFilters, SortKey } from "../api/types";
+import type { CardFilters, SortKey } from "../api/types";
 import styles from "./Cards.module.css";
 
 const DENSITY_OPTIONS: { value: GridSize; label: string }[] = [
@@ -33,59 +32,11 @@ export function Cards() {
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
 
-  // Mode "classeur" (set par set, ordre set récent->ancien + numéro). Marche
-  // aussi avec filtres : chaque set est requêté avec les filtres (chargement
-  // par lots pour traverser vite les sets sans correspondance).
-  const binderMode = !debounced.trim() && (sort === "set-recent" || sort === "set-old");
+  const { binderMode, sections, flatCards, count, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
+    useCardExplorer(debounced, filters, sort, sets, { excludePocket: true });
 
-  // Cartes Pokémon TCG Pocket (jeu digital, série "tcgp") : exclues par défaut
-  // du vrai JCC. Distinctes du reste, réactivables via le filtre dédié.
-  const pocketSetIds = useMemo(
-    () => new Set((sets ?? []).filter((s) => s.seriesId === "tcgp").map((s) => s.id)),
-    [sets],
-  );
-  const isPocket = (providerId: string) => pocketSetIds.has(parseCardId(providerId).setId);
-  // On exclut Pocket sauf si l'utilisateur l'inclut OU choisit explicitement un set.
-  const excludePocket = !filters.includePocket && !filters.set;
-
-  const orderedSets = useMemo(() => {
-    const all = orderSetsByRecency(sets ?? [], sort !== "set-old");
-    if (filters.set) return all.filter((s) => s.id === filters.set);
-    return excludePocket ? all.filter((s) => s.seriesId !== "tcgp") : all;
-  }, [sets, sort, filters.set, excludePocket]);
-  const setRank = useMemo(() => buildSetRankMap(sets ?? []), [sets]);
-
-  const browseKey = `${sort}:${orderedSets.length}:${JSON.stringify(filters)}`;
-  const browse = useCardBrowse(orderedSets, filters, browseKey, binderMode);
-  const flat = useCardSearch(debounced, filters, sort, !binderMode);
-  const q = binderMode ? browse : flat;
-
-  // Données aplaties (mode recherche) ou en sections (mode classeur)
-  const flatCards: CardBrief[] = useMemo(() => {
-    if (binderMode) return [];
-    let items = flat.data?.pages.flatMap((p) => p.items) ?? [];
-    if (excludePocket) items = items.filter((c) => !isPocket(c.providerId));
-    return sortCards(items, sort, setRank);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [binderMode, flat.data, sort, setRank, excludePocket, pocketSetIds]);
-
-  const sections: CardSection[] = useMemo(() => {
-    if (!binderMode) return [];
-    return (browse.data?.pages ?? [])
-      .flatMap((p) => p.sets)
-      .map(({ set, items }) => ({
-        key: set.id,
-        title: set.name,
-        subtitle: `${set.releaseDate?.slice(0, 4) ?? ""} · ${items.length} cartes`.trim(),
-        cards: items,
-      }));
-  }, [binderMode, browse.data]);
-
-  const count = binderMode
-    ? sections.reduce((s, sec) => s + sec.cards.length, 0)
-    : flatCards.length;
-  const loading = q.isLoading || (binderMode && !sets);
-  const showResults = !loading && !q.isError && count > 0;
+  const loading = isLoading;
+  const showResults = !loading && !isError && count > 0;
 
   return (
     <div className={styles.page}>
@@ -125,7 +76,7 @@ export function Cards() {
         onSortChange={setSort}
         sets={sets}
         resultCount={count}
-        hasMore={q.hasNextPage}
+        hasMore={hasNextPage}
         search={search}
         onSearchChange={setSearch}
         mobileBottomBar
@@ -135,7 +86,7 @@ export function Cards() {
         <div className={styles.resultBar}>
           <div className={styles.resultInfo}>
             <span className={styles.count}>{fr.cards.shown(count)}</span>
-            {q.hasNextPage && <span className={styles.scrollHint}>· {fr.cards.scrollMore}</span>}
+            {hasNextPage && <span className={styles.scrollHint}>· {fr.cards.scrollMore}</span>}
           </div>
           <div className={styles.density}>
             <span className={styles.densityLabel}>{fr.cards.density}</span>
@@ -144,21 +95,21 @@ export function Cards() {
         </div>
       )}
 
-      {q.isError ? (
+      {isError ? (
         <EmptyState
           tone="danger"
           icon={<Icon name="alert" size={26} />}
           title={fr.states.errorTitle}
           body={fr.states.errorBody}
           action={
-            <Button variant="ghost" onClick={() => q.refetch()}>
+            <Button variant="ghost" onClick={refetch}>
               {fr.states.retry}
             </Button>
           }
         />
       ) : loading ? (
         <CardGrid cards={[]} skeletonCount={24} size={size} />
-      ) : count === 0 && !q.hasNextPage ? (
+      ) : count === 0 && !hasNextPage ? (
         <EmptyState icon={<Icon name="empty" size={26} />} title={fr.states.emptyTitle} body={fr.states.emptyBody} />
       ) : (
         <CardGrid
@@ -167,10 +118,8 @@ export function Cards() {
           size={size}
           rarityHint={filters.rarities}
           onCardClick={(c) => setSelected(c.providerId)}
-          loadingMore={q.isFetchingNextPage || (count === 0 && q.hasNextPage)}
-          onReachEnd={() => {
-            if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage();
-          }}
+          loadingMore={isFetchingNextPage || (count === 0 && hasNextPage)}
+          onReachEnd={fetchNextPage}
         />
       )}
 
