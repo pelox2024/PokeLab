@@ -29,6 +29,8 @@ interface DeckState {
   setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
   clearCards: () => void;
+  /** Remplace toutes les cartes du deck (import de decklist). */
+  replaceCards: (cards: DeckCard[]) => void;
 }
 
 export const useDeckStore = create<DeckState>((set) => ({
@@ -81,6 +83,7 @@ export const useDeckStore = create<DeckState>((set) => ({
 
   remove: (id) => set((state) => ({ cards: state.cards.filter((c) => c.id !== id) })),
   clearCards: () => set({ cards: [] }),
+  replaceCards: (cards) => set({ cards }),
 }));
 
 export function deckTotal(cards: DeckCard[]): number {

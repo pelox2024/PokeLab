@@ -13,18 +13,24 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, children, labelledBy, size = "lg" }: ModalProps) {
+  // Verrou de défilement : dépend uniquement de `open` (un onClose recréé à
+  // chaque rendu rerapturerait l'overflow déjà "hidden" et figerait la page).
+  useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   if (!open) return null;

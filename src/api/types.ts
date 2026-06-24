@@ -173,6 +173,8 @@ export interface SetInfo {
   logoUrl?: string;
   seriesId?: string;
   seriesName?: string;
+  /** Code PTCGO/PTCG Live (ex: "OBF") — pour l'export de decklists. */
+  ptcgoCode?: string;
 }
 
 export interface SeriesInfo {

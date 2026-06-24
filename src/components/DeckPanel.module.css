@@ -33,13 +33,18 @@
   padding: 0 0 12px;
 }
 
-/* Les onglets restent accessibles en haut pendant le défilement de la page. */
+/* En mode flux, rien n'est collant (sinon les en-têtes "sortent" de leur bloc
+   sous la nav et créent des bandes de couleur / blocs coupés). Tout défile. */
 .panelFlow .tabs {
-  position: sticky;
-  top: var(--nav-h);
-  z-index: 5;
-  padding: 8px 0 0;
-  background: linear-gradient(180deg, var(--bg) 70%, transparent);
+  position: static;
+  padding: 8px 0 4px;
+  background: none;
+}
+
+.panelFlow .groupHead {
+  position: static;
+  background: none;
+  padding: 12px 0 6px;
 }
 
 .head {

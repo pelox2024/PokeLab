@@ -9,12 +9,14 @@ interface PtcgSet {
   name: string;
   releaseDate?: string; // "YYYY/MM/DD"
   series?: string;
+  ptcgoCode?: string;
   images?: { logo?: string; symbol?: string };
 }
 
 export interface SetMeta {
   releaseDate?: string;
   series?: string;
+  ptcgoCode?: string;
   logo?: string;
 }
 
@@ -26,7 +28,7 @@ export async function fetchPokemontcgSetMeta(): Promise<Map<string, SetMeta>> {
   const map = new Map<string, SetMeta>();
   try {
     const res = await fetch(
-      "https://api.pokemontcg.io/v2/sets?pageSize=400&select=id,name,releaseDate,series,images",
+      "https://api.pokemontcg.io/v2/sets?pageSize=400&select=id,name,releaseDate,series,ptcgoCode,images",
     );
     if (res.ok) {
       const json = (await res.json()) as { data?: PtcgSet[] };
@@ -34,6 +36,7 @@ export async function fetchPokemontcgSetMeta(): Promise<Map<string, SetMeta>> {
         map.set(s.name.toLowerCase(), {
           releaseDate: s.releaseDate,
           series: s.series,
+          ptcgoCode: s.ptcgoCode,
           logo: s.images?.logo,
         });
       }

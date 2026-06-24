@@ -130,7 +130,12 @@ export function useSets() {
       ]);
       return sets.map((s) => {
         const m = meta.get(s.name.toLowerCase());
-        return m?.releaseDate ? { ...s, releaseDate: m.releaseDate } : s;
+        if (!m) return s;
+        return {
+          ...s,
+          releaseDate: m.releaseDate ?? s.releaseDate,
+          ptcgoCode: m.ptcgoCode ?? s.ptcgoCode,
+        };
       });
     },
     staleTime: 24 * 60 * 60 * 1000,

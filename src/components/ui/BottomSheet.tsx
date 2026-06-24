@@ -14,16 +14,22 @@ interface BottomSheetProps {
 
 /** Tiroir bas plein écran (mobile-first), avec entête et footer sticky. */
 export function BottomSheet({ open, onClose, title, children, footer }: BottomSheetProps) {
+  // Verrou de défilement : dépend UNIQUEMENT de `open` pour capturer/restaurer
+  // l'overflow une seule fois (sinon un onClose recréé à chaque rendu fige la page).
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   if (!open) return null;
