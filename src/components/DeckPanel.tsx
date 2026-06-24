@@ -1,13 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDeckStore } from "../store/deckStore";
-import { computeStats, groupByCategory, GROUP_LABEL, GROUP_ORDER } from "../lib/deckStats";
+import { buildDeckGroups, computeStats } from "../lib/deckStats";
+import type { DeckSortKey } from "../lib/deckStats";
 import type { DeckCard } from "../db/schema";
 import { fr } from "../lib/i18n";
 import { Icon } from "./ui/Icon";
+import { Select } from "./ui/Select";
 import { DeckStats } from "./DeckStats";
 import styles from "./DeckPanel.module.css";
 
 type DeckTab = "list" | "stats";
+type DeckView = "grid" | "stacks" | "list";
+
+const SORT_OPTIONS: { value: DeckSortKey; label: string }[] = [
+  { value: "type", label: "Par type" },
+  { value: "name", label: "Nom (A→Z)" },
+  { value: "hp", label: "PV" },
+  { value: "rarity", label: "Rareté" },
+  { value: "qty", label: "Quantité" },
+];
 
 /** Déduit le providerId TCGdex ("sv08-001") depuis l'id global ("tcgdex:sv08-001"). */
 function toProviderId(cardId?: string): string | undefined {
@@ -16,18 +27,27 @@ function toProviderId(cardId?: string): string | undefined {
   return i === -1 ? cardId : cardId.slice(i + 1);
 }
 
-/** Tuile visuelle d'une carte du deck : image + quantité, contrôles au survol
- *  (− qté +, retirer) et clic sur l'image pour les détails. Sur écran tactile,
- *  les contrôles restent visibles (pas de survol). */
-function DeckCardTile({ card, onInspect }: { card: DeckCard; onInspect?: (pid: string) => void }) {
+/** Tuile visuelle d'une carte du deck (vues "grille" et "piles"). Contrôles au
+ *  survol (− qté +, retirer) ; clic sur l'image → détails. Sur tactile, les
+ *  contrôles restent visibles. */
+function DeckCardTile({
+  card,
+  view,
+  onInspect,
+}: {
+  card: DeckCard;
+  view: DeckView;
+  onInspect?: (pid: string) => void;
+}) {
   const setQty = useDeckStore((s) => s.setQty);
   const providerId = toProviderId(card.cardId);
   const stop = (e: React.MouseEvent) => e.stopPropagation();
+  const stacked = view === "stacks" && card.quantity > 1;
 
   return (
     <div className={styles.pile}>
       <div
-        className={styles.pileImg}
+        className={[styles.pileImg, stacked ? styles.stacked : ""].filter(Boolean).join(" ")}
         role={onInspect && providerId ? "button" : undefined}
         onClick={() => providerId && onInspect?.(providerId)}
         title={card.name}
@@ -53,26 +73,51 @@ function DeckCardTile({ card, onInspect }: { card: DeckCard; onInspect?: (pid: s
           <Icon name="close" size={12} />
         </button>
         <div className={styles.pileBar} onClick={stop}>
-          <button
-            type="button"
-            className={styles.pileMinus}
-            onClick={() => setQty(card.id, card.quantity - 1)}
-            aria-label="Moins"
-          >
+          <button type="button" className={styles.pileMinus} onClick={() => setQty(card.id, card.quantity - 1)} aria-label="Moins">
             <Icon name="minus" size={13} />
           </button>
           <span className={styles.pileBarQty}>{card.quantity}</span>
-          <button
-            type="button"
-            className={styles.pilePlus}
-            onClick={() => setQty(card.id, card.quantity + 1)}
-            aria-label="Plus"
-          >
+          <button type="button" className={styles.pilePlus} onClick={() => setQty(card.id, card.quantity + 1)} aria-label="Plus">
             <Icon name="plus" size={13} />
           </button>
         </div>
       </div>
       <span className={styles.pileName}>{card.name}</span>
+    </div>
+  );
+}
+
+/** Ligne compacte (vue "liste") : peu de visuel, dense. */
+function DeckListRow({ card, onInspect }: { card: DeckCard; onInspect?: (pid: string) => void }) {
+  const setQty = useDeckStore((s) => s.setQty);
+  const providerId = toProviderId(card.cardId);
+  return (
+    <div className={styles.listRow}>
+      <span className={styles.listQty}>{card.quantity}</span>
+      <button
+        type="button"
+        className={styles.listMain}
+        onClick={() => providerId && onInspect?.(providerId)}
+        title={card.name}
+      >
+        <span className={styles.listThumb}>
+          {card.imageUrl ? <img src={card.imageUrl} alt="" loading="lazy" /> : <Icon name="cards" size={12} />}
+        </span>
+        <span className={styles.listName}>{card.name}</span>
+        {(card.setCode || card.number) && (
+          <span className={styles.listMeta}>
+            {card.setCode?.toUpperCase()} {card.number}
+          </span>
+        )}
+      </button>
+      <span className={styles.listStepper}>
+        <button type="button" onClick={() => setQty(card.id, card.quantity - 1)} aria-label="Moins">
+          <Icon name="minus" size={13} />
+        </button>
+        <button type="button" onClick={() => setQty(card.id, card.quantity + 1)} aria-label="Plus">
+          <Icon name="plus" size={13} />
+        </button>
+      </span>
     </div>
   );
 }
@@ -93,9 +138,14 @@ export function DeckPanel({
   const clearCards = useDeckStore((s) => s.clearCards);
   const [showWarnings, setShowWarnings] = useState(false);
   const [tab, setTab] = useState<DeckTab>("list");
+  const [view, setView] = useState<DeckView>(() => (localStorage.getItem("pokelab.deckView") as DeckView) || "grid");
+  const [deckSort, setDeckSort] = useState<DeckSortKey>(() => (localStorage.getItem("pokelab.deckSort") as DeckSortKey) || "type");
+
+  useEffect(() => localStorage.setItem("pokelab.deckView", view), [view]);
+  useEffect(() => localStorage.setItem("pokelab.deckSort", deckSort), [deckSort]);
 
   const stats = computeStats(cards);
-  const groups = groupByCategory(cards);
+  const deckGroups = buildDeckGroups(cards, deckSort);
   const pct = Math.min(100, Math.round((stats.total / 60) * 100));
   const complete = stats.total === 60;
 
@@ -104,21 +154,58 @@ export function DeckPanel({
     if (confirm("Vider le deck ?")) clearCards();
   };
 
-  const tilesView = GROUP_ORDER.filter((g) => groups[g].length > 0).map((g) => {
-    const count = groups[g].reduce((s, c) => s + c.quantity, 0);
-    return (
-      <section key={g} className={styles.group}>
-        <div className={styles.groupHead}>
-          {GROUP_LABEL[g]} · {count}
-        </div>
-        <div className={styles.pileGrid}>
-          {groups[g].map((c) => (
-            <DeckCardTile key={c.id} card={c} onInspect={onInspect} />
+  const VIEW_BTNS: { value: DeckView; icon: "cards" | "decks" | "menu"; label: string }[] = [
+    { value: "grid", icon: "cards", label: "Grille" },
+    { value: "stacks", icon: "decks", label: "Piles" },
+    { value: "list", icon: "menu", label: "Liste" },
+  ];
+
+  const deckToolbar = (
+    <div className={styles.toolbar}>
+      <div className={styles.viewSwitch} role="group" aria-label="Mode d'affichage">
+        {VIEW_BTNS.map((v) => (
+          <button
+            key={v.value}
+            type="button"
+            className={[styles.viewBtn, view === v.value ? styles.viewBtnActive : ""].join(" ")}
+            onClick={() => setView(v.value)}
+            aria-pressed={view === v.value}
+            title={v.label}
+          >
+            <Icon name={v.icon} size={15} />
+          </button>
+        ))}
+      </div>
+      <Select
+        className={styles.sortSelect}
+        options={SORT_OPTIONS}
+        value={deckSort}
+        onChange={(e) => setDeckSort(e.target.value as DeckSortKey)}
+        aria-label="Trier le deck"
+      />
+    </div>
+  );
+
+  const deckContent = deckGroups.map((g) => (
+    <section key={g.key} className={styles.group}>
+      <div className={styles.groupHead}>
+        {g.label} · {g.count}
+      </div>
+      {view === "list" ? (
+        <div className={styles.listRows}>
+          {g.cards.map((c) => (
+            <DeckListRow key={c.id} card={c} onInspect={onInspect} />
           ))}
         </div>
-      </section>
-    );
-  });
+      ) : (
+        <div className={view === "stacks" ? styles.stackGrid : styles.pileGrid}>
+          {g.cards.map((c) => (
+            <DeckCardTile key={c.id} card={c} view={view} onInspect={onInspect} />
+          ))}
+        </div>
+      )}
+    </section>
+  ));
 
   return (
     <div className={styles.panel}>
@@ -191,14 +278,25 @@ export function DeckPanel({
         </div>
       ) : wide ? (
         <div className={styles.wide}>
-          <div className={styles.wideList}>{tilesView}</div>
+          <div className={styles.wideList}>
+            {deckToolbar}
+            {deckContent}
+          </div>
           <aside className={styles.wideStats}>
-            <div className={styles.wideStatsTitle}>{fr.builder.tabStats}</div>
             <DeckStats stats={stats} />
           </aside>
         </div>
       ) : (
-        <div className={styles.body}>{tab === "stats" ? <DeckStats stats={stats} /> : tilesView}</div>
+        <div className={styles.body}>
+          {tab === "stats" ? (
+            <DeckStats stats={stats} />
+          ) : (
+            <>
+              {deckToolbar}
+              {deckContent}
+            </>
+          )}
+        </div>
       )}
 
       {cards.length > 0 && !embedded && (

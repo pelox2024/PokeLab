@@ -1,4 +1,5 @@
 import type { DeckCard } from "../db/schema";
+import { RARITIES } from "./filters";
 
 export interface HpBucket {
   label: string;
@@ -26,6 +27,14 @@ export interface DeckStats {
   hpBuckets: HpBucket[];
   /** PV moyen pondéré des Pokémon connus. */
   avgHp: number;
+  /** Nombre de Pokémon de base (déterminant pour le risque de mulligan). */
+  basicCount: number;
+  /** Probabilité de mulligan (aucun Pokémon de base dans la main de 7), en %. */
+  mulliganPct: number | null;
+  /** Récompenses moyennes cédées par Pokémon (1 / 2 ex-V-VSTAR / 3 VMAX). */
+  prizeAvg: number;
+  /** Répartition des Pokémon par récompenses cédées (en quantités). */
+  prizeBreakdown: { one: number; two: number; three: number };
 }
 
 // Tranches de PV (bornes basses incluses). Couvre tout le spectre moderne.
@@ -133,6 +142,32 @@ export function computeStats(cards: DeckCard[]): DeckStats {
   const hpBuckets: HpBucket[] = HP_BUCKETS.map((b, i) => ({ label: b.label, count: hpCounts[i] }));
   const avgHp = hpQty > 0 ? Math.round(hpSum / hpQty) : 0;
 
+  // Récompenses cédées par Pokémon : VMAX = 3, ex/V/VSTAR = 2, sinon 1.
+  const prizeBreakdown = { one: 0, two: 0, three: 0 };
+  let prizeSum = 0;
+  for (const c of cards) {
+    if (c.category !== "Pokemon") continue;
+    const suffix = c.suffix?.toLowerCase();
+    let p = 1;
+    if (has(c, "VMAX")) p = 3;
+    else if (has(c, "VSTAR") || suffix === "ex" || suffix === "v") p = 2;
+    prizeSum += p * c.quantity;
+    if (p === 3) prizeBreakdown.three += c.quantity;
+    else if (p === 2) prizeBreakdown.two += c.quantity;
+    else prizeBreakdown.one += c.quantity;
+  }
+  const prizeAvg = pokemon > 0 ? Math.round((prizeSum / pokemon) * 10) / 10 : 0;
+
+  // Risque de mulligan = P(aucun Pokémon de base dans une main de 7).
+  // Hypergéométrique : produit_{i=0..6} (N-B-i)/(N-i). Stable numériquement.
+  const basicCount = stages.basic;
+  let mulliganPct: number | null = null;
+  if (total >= 7 && basicCount >= 0) {
+    let p = 1;
+    for (let i = 0; i < 7; i++) p *= (total - basicCount - i) / (total - i);
+    mulliganPct = Math.max(0, Math.round(p * 1000) / 10);
+  }
+
   return {
     total,
     pokemon,
@@ -147,6 +182,10 @@ export function computeStats(cards: DeckCard[]): DeckStats {
     typeCounts,
     hpBuckets,
     avgHp,
+    basicCount,
+    mulliganPct,
+    prizeAvg,
+    prizeBreakdown,
   };
 }
 
@@ -171,4 +210,58 @@ export function groupByCategory(cards: DeckCard[]): Record<DeckGroupKey, DeckCar
     groups[k].sort((a, b) => a.name.localeCompare(b.name));
   }
   return groups;
+}
+
+/* ============================================================
+   Tri / regroupement des cartes du deck (façon LorcaHub)
+   ============================================================ */
+
+export type DeckSortKey = "type" | "name" | "hp" | "rarity" | "qty";
+
+export interface DeckGroup {
+  key: string;
+  label: string;
+  count: number;
+  cards: DeckCard[];
+}
+
+const RARITY_RANK = new Map(RARITIES.map((r, i) => [r, i] as const));
+const qtySum = (arr: DeckCard[]) => arr.reduce((s, c) => s + c.quantity, 0);
+
+export function buildDeckGroups(cards: DeckCard[], sort: DeckSortKey): DeckGroup[] {
+  if (sort === "type") {
+    const g = groupByCategory(cards);
+    return GROUP_ORDER.filter((k) => g[k].length > 0).map((k) => ({
+      key: k,
+      label: GROUP_LABEL[k],
+      count: qtySum(g[k]),
+      cards: g[k],
+    }));
+  }
+
+  if (sort === "rarity") {
+    const map = new Map<string, DeckCard[]>();
+    for (const c of cards) {
+      const r = c.rarity ?? "Sans rareté";
+      if (!map.has(r)) map.set(r, []);
+      map.get(r)!.push(c);
+    }
+    const groups = [...map.entries()].map(([label, cs]) => ({
+      key: label,
+      label,
+      count: qtySum(cs),
+      cards: [...cs].sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+    groups.sort((a, b) => (RARITY_RANK.get(a.label) ?? 999) - (RARITY_RANK.get(b.label) ?? 999));
+    return groups;
+  }
+
+  // Tris à plat (un seul groupe)
+  const sorted = [...cards];
+  if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
+  else if (sort === "hp") sorted.sort((a, b) => (b.hp ?? -1) - (a.hp ?? -1) || a.name.localeCompare(b.name));
+  else if (sort === "qty") sorted.sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
+
+  const labels: Record<string, string> = { name: "Ordre alphabétique", hp: "Par PV décroissant", qty: "Par quantité" };
+  return [{ key: "all", label: labels[sort] ?? "Toutes les cartes", count: qtySum(sorted), cards: sorted }];
 }

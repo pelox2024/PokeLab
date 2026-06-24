@@ -50,6 +50,10 @@ export function Builder() {
     return saved >= EXPLORER_MIN && saved <= EXPLORER_MAX ? saved : 440;
   });
   const dragRef = useRef<{ x: number; w: number } | null>(null);
+  const [explorerOpen, setExplorerOpen] = useState(() => localStorage.getItem("pokelab.explorerOpen") !== "0");
+  useEffect(() => {
+    localStorage.setItem("pokelab.explorerOpen", explorerOpen ? "1" : "0");
+  }, [explorerOpen]);
 
   const onResizeStart = (e: ReactPointerEvent) => {
     dragRef.current = { x: e.clientX, w: explorerW };
@@ -216,25 +220,49 @@ export function Builder() {
   // --- Desktop : deck (héros) au centre + explorateur d'ajout redimensionnable ---
   return (
     <div className={styles.page}>
-      <div className={styles.layout} style={{ ["--explorer-w" as string]: `${explorerW}px` } as CSSProperties}>
+      <div
+        className={styles.layout}
+        data-collapsed={!explorerOpen}
+        style={{ ["--explorer-w" as string]: `${explorerW}px` } as CSSProperties}
+      >
         <section className={styles.deckZone}>
           {deckHeader}
           <div className={styles.deckCockpit}>
             <DeckPanel wide onInspect={setInspected} />
           </div>
         </section>
-        <div
-          className={styles.resizer}
-          onPointerDown={onResizeStart}
-          onPointerMove={onResizeMove}
-          onPointerUp={onResizeEnd}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Redimensionner le panneau d'ajout"
-        >
-          <span className={styles.resizerGrip} />
-        </div>
-        <aside className={styles.explorerPanel}>{explorer}</aside>
+
+        {explorerOpen ? (
+          <>
+            <div
+              className={styles.resizer}
+              onPointerDown={onResizeStart}
+              onPointerMove={onResizeMove}
+              onPointerUp={onResizeEnd}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Redimensionner le panneau d'ajout"
+            >
+              <button
+                type="button"
+                className={styles.collapseBtn}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setExplorerOpen(false)}
+                aria-label="Masquer le panneau d'ajout"
+                title="Masquer"
+              >
+                <span className={styles.collapseGlyph}>›</span>
+              </button>
+              <span className={styles.resizerGrip} />
+            </div>
+            <aside className={styles.explorerPanel}>{explorer}</aside>
+          </>
+        ) : (
+          <button type="button" className={styles.reopenTab} onClick={() => setExplorerOpen(true)}>
+            <Icon name="plus" size={16} />
+            <span>{fr.builder.addCards}</span>
+          </button>
+        )}
       </div>
       <CardDetailModal providerId={inspected} onClose={() => setInspected(null)} onSelectCard={setInspected} />
     </div>

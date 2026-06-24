@@ -222,11 +222,72 @@
   background: linear-gradient(180deg, var(--surface-strong), transparent);
 }
 
+/* ---- Barre d'outils du deck (vue + tri) ---- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.viewSwitch {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-faint);
+}
+
+.viewBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+
+.viewBtn:hover {
+  color: var(--text);
+}
+
+.viewBtnActive {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+.sortSelect {
+  min-width: 130px;
+}
+
 /* ---- Deck visuel : grille de tuiles ---- */
 .pileGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 12px;
+}
+
+.stackGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 18px 16px;
+  padding: 6px 6px 0 0;
+}
+
+/* Effet "pile" : copies empilées en décalé derrière la carte. */
+.stacked {
+  box-shadow:
+    3px -3px 0 -1px var(--surface-strong),
+    3px -3px 0 0 var(--border-glass),
+    6px -6px 0 -1px var(--surface-strong),
+    6px -6px 0 0 var(--border-glass);
 }
 
 .pile {
@@ -366,6 +427,119 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ---- Vue liste (compacte) ---- */
+.listRows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  transition: background var(--t-fast);
+}
+
+.listRow:hover {
+  background: var(--surface-hover);
+}
+
+.listQty {
+  flex-shrink: 0;
+  min-width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
+.listMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.listThumb {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 33px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface-soft);
+  color: var(--text-faint);
+}
+
+.listThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listMeta {
+  flex-shrink: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+
+.listStepper {
+  flex-shrink: 0;
+  display: inline-flex;
+  gap: 2px;
+}
+
+.listStepper button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  background: var(--surface-glass);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.listStepper button:first-child:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.listStepper button:last-child:hover {
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 .footer {
