@@ -15,6 +15,7 @@ import { CardGrid } from "../components/CardGrid";
 import { FilterBar } from "../components/FilterBar";
 import { DeckPanel } from "../components/DeckPanel";
 import { CardDetailModal } from "../components/CardDetailModal";
+import { ImportExportModal } from "../components/ImportExportModal";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
@@ -33,7 +34,7 @@ export function Builder() {
   const queryClient = useQueryClient();
   const isMobile = useMediaQuery("(max-width: 980px)");
 
-  const { deckId, versionId, name, format, cards, load, setName, setFormat, add, enrich, clearCards } =
+  const { deckId, versionId, name, format, cards, load, setName, setFormat, add, enrich, clearCards, replaceCards } =
     useDeckStore();
 
   const [search, setSearch] = useState("");
@@ -41,6 +42,7 @@ export function Builder() {
   const [sort, setSort] = useState<SortKey>("set-recent");
   const [drawer, setDrawer] = useState(false);
   const [inspected, setInspected] = useState<string | null>(null);
+  const [ioOpen, setIoOpen] = useState(false);
 
   // Largeur du panneau d'ajout (redimensionnable, persistée).
   const EXPLORER_MIN = 320;
@@ -182,7 +184,14 @@ export function Builder() {
       <Button variant="ghost" size="md" onClick={newDeck} iconLeft={<Icon name="plus" size={16} />}>
         {fr.builder.newDeck}
       </Button>
+      <Button variant="ghost" size="md" onClick={() => setIoOpen(true)} iconLeft={<Icon name="sort" size={16} />}>
+        Import / Export
+      </Button>
     </header>
+  );
+
+  const ioModal = (
+    <ImportExportModal open={ioOpen} onClose={() => setIoOpen(false)} cards={cards} sets={sets} onImport={replaceCards} />
   );
 
   // --- Mobile : deck-first (le deck est l'écran principal) ---
@@ -213,6 +222,7 @@ export function Builder() {
           {explorer}
         </BottomSheet>
         <CardDetailModal providerId={inspected} onClose={() => setInspected(null)} onSelectCard={setInspected} />
+        {ioModal}
       </div>
     );
   }
@@ -265,6 +275,7 @@ export function Builder() {
         )}
       </div>
       <CardDetailModal providerId={inspected} onClose={() => setInspected(null)} onSelectCard={setInspected} />
+      {ioModal}
     </div>
   );
 }
