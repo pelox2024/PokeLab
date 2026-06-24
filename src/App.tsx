@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { Cards } from "./pages/Cards";
-import { Analysis, Builder, MyDecks, Settings } from "./pages/Placeholder";
+import { Builder } from "./pages/Builder";
+import { MyDecks } from "./pages/MyDecks";
+import { Analysis, Settings } from "./pages/Placeholder";
 
 export default function App() {
   return (

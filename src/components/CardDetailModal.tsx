@@ -5,6 +5,7 @@ import { useCardDetail, useCardVersions, usePokemontcgPrice } from "../hooks/use
 import { useFoilHover } from "../hooks/useFoilHover";
 import { getCardVisualTreatment } from "../lib/foil";
 import { cardmarketLink, canShowPrice, hasExactLink, pickCardmarket } from "../lib/pricing";
+import { useDeckStore } from "../store/deckStore";
 import { TYPE_COLORS } from "../lib/filters";
 import { fr } from "../lib/i18n";
 import { Modal } from "./ui/Modal";
@@ -259,6 +260,38 @@ function VersionsStrip({
   );
 }
 
+function AddToDeck({ card }: { card: CardRecord }) {
+  const deckId = useDeckStore((s) => s.deckId);
+  const add = useDeckStore((s) => s.add);
+  const qty = useDeckStore((s) => s.cards.find((c) => c.cardId === card.id)?.quantity ?? 0);
+
+  if (!deckId) {
+    return <span className={styles.soonNote}>{fr.detail.addToDeckSoon}</span>;
+  }
+  return (
+    <button
+      type="button"
+      className={styles.addBtn}
+      onClick={() =>
+        add({
+          cardId: card.id,
+          name: card.name,
+          category: card.category,
+          number: card.number,
+          setCode: card.setId,
+          imageUrl: card.imageUrl,
+          rarity: card.rarity,
+          subtypes: card.subtypes,
+        })
+      }
+    >
+      <Icon name="plus" size={16} />
+      {fr.builder.addToDeck}
+      {qty > 0 && <span className={styles.addQty}>{qty}</span>}
+    </button>
+  );
+}
+
 function DetailContent({
   card,
   onSelectCard,
@@ -418,13 +451,14 @@ function DetailContent({
           </div>
         )}
 
+        <AddToDeck card={card} />
+
         <div className={styles.footerRow}>
           {card.illustrator && (
             <span className={styles.illustrator}>
               {fr.detail.illustrator} · {card.illustrator}
             </span>
           )}
-          <span className={styles.soonNote}>{fr.detail.addToDeckSoon}</span>
         </div>
       </div>
     </div>

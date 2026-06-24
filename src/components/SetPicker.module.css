@@ -158,6 +158,10 @@
   .list {
     max-height: none;
   }
+  /* 16px = seuil iOS pour éviter l'auto-zoom au focus du champ */
+  .search {
+    font-size: 16px;
+  }
 }
 
 .option {

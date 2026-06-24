@@ -56,3 +56,11 @@
 .input::placeholder {
   color: var(--text-faint);
 }
+
+/* Évite l'auto-zoom iOS au focus (police >= 16px sur mobile) */
+@media (max-width: 720px) {
+  .input,
+  .lg .input {
+    font-size: 16px;
+  }
+}

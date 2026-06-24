@@ -16,6 +16,9 @@ export interface DeckCard {
   category: CardCategory;
   setCode?: string;
   number?: string;
+  imageUrl?: string;
+  rarity?: string;
+  subtypes?: string[];
   rawLine?: string; // ligne brute issue d'un import non résolu
   manual: boolean; // true = carte non résolue via l'API
 }

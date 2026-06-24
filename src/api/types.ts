@@ -145,7 +145,7 @@ export interface CardFilters {
   expandedLegal?: boolean;
 }
 
-export type SortKey = "name-asc" | "name-desc";
+export type SortKey = "set-recent" | "set-old" | "number-asc" | "name-asc" | "name-desc";
 
 export interface CardQuery {
   search?: string;

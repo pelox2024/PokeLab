@@ -3,7 +3,7 @@
 Application web premium, **card-first**, pour explorer les cartes Pokémon TCG et
 construire des decks. Interface française, dark mode / glassmorphism, avec une direction artistique « finance app / Apple dark glass ».
 
-> État actuel : **Phase 1 / Lot 2.9 — Expérience mobile-first**.
+> État actuel : **Phase 2 — Constructeur de decks (V1)**.
 
 Docs : [`docs/PRICING_STRATEGY.md`](docs/PRICING_STRATEGY.md) ·
 [`docs/FILTER_STRATEGY.md`](docs/FILTER_STRATEGY.md).

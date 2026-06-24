@@ -14,9 +14,11 @@ interface CardTileProps {
   onClick?: (card: CardBrief) => void;
   /** Raretés du filtre actif : si full-card, on peut appliquer un foil léger. */
   rarityHint?: string[];
+  /** Quantité présente dans le deck en cours (badge). */
+  inDeckQty?: number;
 }
 
-export function CardTile({ card, onClick, rarityHint }: CardTileProps) {
+export function CardTile({ card, onClick, rarityHint, inDeckQty }: CardTileProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const queryClient = useQueryClient();
@@ -95,6 +97,8 @@ export function CardTile({ card, onClick, rarityHint }: CardTileProps) {
               <span className={styles.glare} />
             </>
           )}
+
+          {inDeckQty != null && inDeckQty > 0 && <span className={styles.deckBadge}>{inDeckQty}</span>}
         </div>
       </div>
 

@@ -21,6 +21,7 @@ interface CardGridProps {
   skeletonCount?: number;
   size?: GridSize;
   rarityHint?: string[];
+  getQty?: (card: CardBrief) => number;
 }
 
 export function CardGrid({
@@ -31,6 +32,7 @@ export function CardGrid({
   skeletonCount = 0,
   size = "normal",
   rarityHint,
+  getQty,
 }: CardGridProps) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -67,7 +69,13 @@ export function CardGrid({
     <>
       <div className={styles.grid} style={gridStyle}>
         {cards.map((card) => (
-          <CardTile key={card.id} card={card} onClick={onCardClick} rarityHint={rarityHint} />
+          <CardTile
+            key={card.id}
+            card={card}
+            onClick={onCardClick}
+            rarityHint={rarityHint}
+            inDeckQty={getQty?.(card)}
+          />
         ))}
       </div>
       {loadingMore && (

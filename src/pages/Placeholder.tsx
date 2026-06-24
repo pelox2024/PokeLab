@@ -32,28 +32,6 @@ function PlaceholderPage({ icon, title, subtitle, body }: PlaceholderPageProps) 
   );
 }
 
-export function Builder() {
-  return (
-    <PlaceholderPage
-      icon={<Icon name="builder" size={22} />}
-      title={fr.nav.builder}
-      subtitle="Construisez vos decks de 60 cartes"
-      body={fr.builder.comingSoon}
-    />
-  );
-}
-
-export function MyDecks() {
-  return (
-    <PlaceholderPage
-      icon={<Icon name="decks" size={22} />}
-      title={fr.nav.myDecks}
-      subtitle="Tous vos decks sauvegardés"
-      body={fr.myDecks.comingSoon}
-    />
-  );
-}
-
 export function Analysis() {
   return (
     <PlaceholderPage

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCardSearch, useSets } from "../hooks/useCards";
 import { useDebounce } from "../lib/useDebounce";
+import { buildSetRankMap, sortCards } from "../lib/cardSort";
 import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
 import type { GridSize } from "../components/CardGrid";
@@ -24,7 +25,7 @@ const DENSITY_OPTIONS: { value: GridSize; label: string }[] = [
 export function Cards() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<CardFilters>({});
-  const [sort, setSort] = useState<SortKey>("name-asc");
+  const [sort, setSort] = useState<SortKey>("set-recent");
   const [selected, setSelected] = useState<string | null>(null);
   const [size, setSize] = useState<GridSize>("normal");
 
@@ -41,10 +42,11 @@ export function Cards() {
     isFetchingNextPage,
   } = useCardSearch(debounced, filters, sort);
 
-  const cards: CardBrief[] = useMemo(
-    () => data?.pages.flatMap((p) => p.items) ?? [],
-    [data],
-  );
+  const setRank = useMemo(() => buildSetRankMap(sets ?? []), [sets]);
+  const cards: CardBrief[] = useMemo(() => {
+    const flat = data?.pages.flatMap((p) => p.items) ?? [];
+    return sortCards(flat, sort, setRank);
+  }, [data, sort, setRank]);
 
   const showResults = !isLoading && !isError && cards.length > 0;
 

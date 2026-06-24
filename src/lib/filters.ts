@@ -82,6 +82,9 @@ export const RARITIES: string[] = [
 export const REGULATION_MARKS: string[] = ["F", "G", "H", "I"];
 
 export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "set-recent", label: "Set récent" },
+  { value: "set-old", label: "Set ancien" },
+  { value: "number-asc", label: "Numéro" },
   { value: "name-asc", label: "Nom A–Z" },
   { value: "name-desc", label: "Nom Z–A" },
 ];
