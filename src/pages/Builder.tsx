@@ -15,7 +15,7 @@ import { CardGrid } from "../components/CardGrid";
 import { FilterBar } from "../components/FilterBar";
 import { DeckPanel } from "../components/DeckPanel";
 import { CardDetailModal } from "../components/CardDetailModal";
-import { ImportExportModal } from "../components/ImportExportModal";
+import { ExportModal } from "../components/ExportModal";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
@@ -34,7 +34,7 @@ export function Builder() {
   const queryClient = useQueryClient();
   const isMobile = useMediaQuery("(max-width: 980px)");
 
-  const { deckId, versionId, name, format, cards, load, setName, setFormat, add, enrich, clearCards, replaceCards } =
+  const { deckId, versionId, name, format, cards, load, setName, setFormat, add, enrich, clearCards } =
     useDeckStore();
 
   const [search, setSearch] = useState("");
@@ -227,13 +227,13 @@ export function Builder() {
         {fr.builder.newDeck}
       </Button>
       <Button variant="ghost" size="md" onClick={() => setIoOpen(true)} iconLeft={<Icon name="sort" size={16} />}>
-        Import / Export
+        Exporter
       </Button>
     </header>
   );
 
   const ioModal = (
-    <ImportExportModal open={ioOpen} onClose={() => setIoOpen(false)} cards={cards} sets={sets} onImport={replaceCards} />
+    <ExportModal open={ioOpen} onClose={() => setIoOpen(false)} cards={cards} sets={sets} deckName={name} />
   );
 
   // --- Mobile : deck-first (le deck est l'écran principal) ---

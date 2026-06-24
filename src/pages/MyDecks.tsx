@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../db/db";
 import type { Deck, DeckVersion } from "../db/schema";
-import { createDeck, deleteDeck, duplicateDeck, updateDeckMeta } from "../db/decks";
+import { deleteDeck, duplicateDeck, updateDeckMeta } from "../db/decks";
 import { useDeckStore } from "../store/deckStore";
 import { deckTotal } from "../store/deckStore";
 import { fr } from "../lib/i18n";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Icon } from "../components/ui/Icon";
+import { CreateDeckModal } from "../components/CreateDeckModal";
 import styles from "./MyDecks.module.css";
 
 interface Summary {
@@ -31,6 +32,7 @@ export function MyDecks() {
   const navigate = useNavigate();
   const load = useDeckStore((s) => s.load);
   const [showArchived, setShowArchived] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const summaries = useLiveQuery<Summary[]>(async () => {
     const decks = await db.decks.orderBy("updatedAt").reverse().toArray();
@@ -50,12 +52,6 @@ export function MyDecks() {
     [summaries, showArchived],
   );
   const archivedCount = (summaries ?? []).filter((s) => s.deck.archived).length;
-
-  const create = async () => {
-    const { deck, version } = await createDeck();
-    load({ deckId: deck.id, versionId: version.id, name: deck.name, format: deck.format, cards: [] });
-    navigate("/builder");
-  };
 
   const open = (s: Summary) => {
     if (!s.version) return;
@@ -84,7 +80,7 @@ export function MyDecks() {
             <p className={styles.subtitle}>{fr.myDecks.subtitle}</p>
           </div>
         </div>
-        <Button variant="primary" onClick={create} iconLeft={<Icon name="plus" size={16} />}>
+        <Button variant="primary" onClick={() => setCreating(true)} iconLeft={<Icon name="plus" size={16} />}>
           {fr.myDecks.create}
         </Button>
       </header>
@@ -106,7 +102,7 @@ export function MyDecks() {
           title={fr.myDecks.emptyTitle}
           body={fr.myDecks.emptyBody}
           action={
-            <Button variant="primary" onClick={create} iconLeft={<Icon name="plus" size={16} />}>
+            <Button variant="primary" onClick={() => setCreating(true)} iconLeft={<Icon name="plus" size={16} />}>
               {fr.myDecks.create}
             </Button>
           }
@@ -153,6 +149,8 @@ export function MyDecks() {
           })}
         </div>
       )}
+
+      <CreateDeckModal open={creating} onClose={() => setCreating(false)} />
     </div>
   );
 }

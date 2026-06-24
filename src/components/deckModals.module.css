@@ -4,6 +4,28 @@
   margin-bottom: 14px;
 }
 
+.fields {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.fieldLabel {
+  font-size: var(--fs-xs);
+  font-weight: 650;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .tabs {
   display: flex;
   gap: 4px;
