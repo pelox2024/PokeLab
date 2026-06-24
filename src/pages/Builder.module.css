@@ -43,35 +43,30 @@
   }
 }
 
-/* FAB mobile */
+/* Mobile deck-first : le deck occupe l'écran */
+.deckMain {
+  height: calc(100dvh - var(--nav-h) - 170px);
+  min-height: 320px;
+}
+
+/* FAB "Ajouter des cartes" (centré, zone du pouce) */
 .fab {
   position: fixed;
-  right: 16px;
-  bottom: calc(72px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(76px + env(safe-area-inset-bottom));
   z-index: 70;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 18px;
+  padding: 13px 24px;
   border: none;
   border-radius: var(--radius-pill);
   font-family: inherit;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
   font-weight: 700;
   color: #fff;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: var(--shadow-strong), var(--shadow-glow);
   cursor: pointer;
-}
-
-.fabCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 6px;
-  border-radius: var(--radius-pill);
-  background: rgba(0, 0, 0, 0.28);
-  font-weight: 800;
 }

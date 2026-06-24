@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SetInfo } from "../api/types";
-import { seriesRank } from "../lib/filters";
+import { setRecencyValue } from "../lib/cardSort";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { Icon } from "./ui/Icon";
 import { BottomSheet } from "./ui/BottomSheet";
@@ -20,10 +20,11 @@ interface SeriesGroup {
 }
 
 function sortSets(a: SetInfo, b: SetInfo): number {
-  const ra = seriesRank(a.seriesId);
-  const rb = seriesRank(b.seriesId);
-  if (ra !== rb) return ra - rb;
-  return b.id.localeCompare(a.id);
+  return setRecencyValue(b) - setRecencyValue(a); // plus récent d'abord
+}
+
+function setYear(s: SetInfo): string | undefined {
+  return s.releaseDate ? s.releaseDate.slice(0, 4) : undefined;
 }
 
 function groupBySeries(sets: SetInfo[]): SeriesGroup[] {
@@ -38,8 +39,9 @@ function groupBySeries(sets: SetInfo[]): SeriesGroup[] {
     g.sets.push(s);
   }
   const groups = [...map.values()];
-  groups.sort((a, b) => seriesRank(a.seriesId) - seriesRank(b.seriesId));
   for (const g of groups) g.sets.sort(sortSets);
+  // Série ordonnée par son set le plus récent
+  groups.sort((a, b) => setRecencyValue(b.sets[0]) - setRecencyValue(a.sets[0]));
   return groups;
 }
 
@@ -60,6 +62,7 @@ function SetRow({ set, active, onPick }: { set: SetInfo; active: boolean; onPick
       <span className={styles.optMain}>
         <span className={styles.optName}>{set.name}</span>
         <span className={styles.optMeta}>
+          {setYear(set) ? `${setYear(set)} · ` : ""}
           {set.seriesName ?? "—"}
           {set.cardCount != null && <span> · {set.cardCount} cartes</span>}
         </span>

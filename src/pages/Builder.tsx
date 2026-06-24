@@ -8,7 +8,7 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useDebounce } from "../lib/useDebounce";
 import { buildSetRankMap, sortCards } from "../lib/cardSort";
 import { createDeck, persistDeck } from "../db/decks";
-import { deckTotal, useDeckStore } from "../store/deckStore";
+import { useDeckStore } from "../store/deckStore";
 import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
 import { FilterBar } from "../components/FilterBar";
@@ -106,91 +106,85 @@ export function Builder() {
     );
   }
 
-  const total = deckTotal(cards);
+  const explorer = (
+    <div className={styles.explorer}>
+      <Input
+        sizeVariant="lg"
+        iconLeft={<Icon name="search" size={20} />}
+        placeholder={fr.cards.searchPlaceholder}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      <FilterBar
+        filters={filters}
+        onChange={setFilters}
+        sort={sort}
+        onSortChange={setSort}
+        sets={sets}
+        resultCount={gridCards.length}
+        hasMore={hasNextPage}
+      />
+      {isError ? (
+        <EmptyState tone="danger" icon={<Icon name="alert" size={26} />} title={fr.states.errorTitle} body={fr.states.errorBody} />
+      ) : isLoading ? (
+        <CardGrid cards={[]} skeletonCount={18} size="compact" />
+      ) : gridCards.length === 0 ? (
+        <EmptyState icon={<Icon name="empty" size={26} />} title={fr.states.emptyTitle} body={fr.states.emptyBody} />
+      ) : (
+        <CardGrid
+          cards={gridCards}
+          size="compact"
+          rarityHint={filters.rarities}
+          getQty={(c) => qtyByCard.get(c.id) ?? 0}
+          onCardClick={addToDeck}
+          loadingMore={isFetchingNextPage}
+          onReachEnd={() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          }}
+        />
+      )}
+    </div>
+  );
 
+  const deckHeader = (
+    <header className={styles.deckHeader}>
+      <Input className={styles.nameInput} value={name} onChange={(e) => setName(e.target.value)} aria-label={fr.builder.deckName} />
+      <Select options={FORMAT_OPTIONS} value={format} onChange={(e) => setFormat(e.target.value as DeckFormat)} aria-label={fr.builder.format} />
+      <Button variant="ghost" size="md" onClick={newDeck} iconLeft={<Icon name="plus" size={16} />}>
+        {fr.builder.newDeck}
+      </Button>
+    </header>
+  );
+
+  // --- Mobile : deck-first (le deck est l'écran principal) ---
+  if (isMobile) {
+    return (
+      <div className={styles.page}>
+        {deckHeader}
+        <div className={styles.deckMain}>
+          <DeckPanel embedded />
+        </div>
+        <button type="button" className={styles.fab} onClick={() => setDrawer(true)}>
+          <Icon name="plus" size={18} />
+          {fr.builder.addCards}
+        </button>
+        <BottomSheet open={drawer} onClose={() => setDrawer(false)} title={fr.builder.addCards}>
+          {explorer}
+        </BottomSheet>
+      </div>
+    );
+  }
+
+  // --- Desktop : explorer + deck panel ---
   return (
     <div className={styles.page}>
-      {/* Header deck */}
-      <header className={styles.deckHeader}>
-        <Input
-          className={styles.nameInput}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          aria-label={fr.builder.deckName}
-        />
-        <Select
-          options={FORMAT_OPTIONS}
-          value={format}
-          onChange={(e) => setFormat(e.target.value as DeckFormat)}
-          aria-label={fr.builder.format}
-        />
-        <Button variant="ghost" size="md" onClick={newDeck} iconLeft={<Icon name="plus" size={16} />}>
-          {fr.builder.newDeck}
-        </Button>
-      </header>
-
+      {deckHeader}
       <div className={styles.layout}>
-        {/* Explorer */}
-        <div className={styles.explorer}>
-          <Input
-            sizeVariant="lg"
-            iconLeft={<Icon name="search" size={20} />}
-            placeholder={fr.cards.searchPlaceholder}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <FilterBar
-            filters={filters}
-            onChange={setFilters}
-            sort={sort}
-            onSortChange={setSort}
-            sets={sets}
-            resultCount={gridCards.length}
-            hasMore={hasNextPage}
-          />
-
-          {isError ? (
-            <EmptyState tone="danger" icon={<Icon name="alert" size={26} />} title={fr.states.errorTitle} body={fr.states.errorBody} />
-          ) : isLoading ? (
-            <CardGrid cards={[]} skeletonCount={18} size="compact" />
-          ) : gridCards.length === 0 ? (
-            <EmptyState icon={<Icon name="empty" size={26} />} title={fr.states.emptyTitle} body={fr.states.emptyBody} />
-          ) : (
-            <CardGrid
-              cards={gridCards}
-              size="compact"
-              rarityHint={filters.rarities}
-              getQty={(c) => qtyByCard.get(c.id) ?? 0}
-              onCardClick={addToDeck}
-              loadingMore={isFetchingNextPage}
-              onReachEnd={() => {
-                if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-              }}
-            />
-          )}
-        </div>
-
-        {/* Deck panel (desktop) */}
-        {!isMobile && (
-          <aside className={styles.aside}>
-            <DeckPanel />
-          </aside>
-        )}
+        {explorer}
+        <aside className={styles.aside}>
+          <DeckPanel />
+        </aside>
       </div>
-
-      {/* Bouton flottant + drawer (mobile) */}
-      {isMobile && (
-        <>
-          <button type="button" className={styles.fab} onClick={() => setDrawer(true)}>
-            <Icon name="decks" size={18} />
-            {fr.builder.viewDeck}
-            <span className={styles.fabCount}>{total}</span>
-          </button>
-          <BottomSheet open={drawer} onClose={() => setDrawer(false)} title={fr.builder.currentDeck}>
-            <DeckPanel onClose={() => setDrawer(false)} />
-          </BottomSheet>
-        </>
-      )}
     </div>
   );
 }

@@ -24,3 +24,26 @@
 .sentinel {
   height: 1px;
 }
+
+.section {
+  margin-bottom: 26px;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-faint);
+}
+
+.sectionTitle {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+
+.sectionSub {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}

@@ -22,11 +22,11 @@ function CardRow({ card }: { card: DeckCard }) {
         )}
       </span>
       <span className={styles.stepper}>
-        <button type="button" onClick={() => setQty(card.id, card.quantity - 1)} aria-label="Retirer">
+        <button type="button" className={styles.minus} onClick={() => setQty(card.id, card.quantity - 1)} aria-label="Retirer">
           <Icon name="minus" size={14} />
         </button>
         <span className={styles.qty}>{card.quantity}</span>
-        <button type="button" onClick={() => setQty(card.id, card.quantity + 1)} aria-label="Ajouter">
+        <button type="button" className={styles.plus} onClick={() => setQty(card.id, card.quantity + 1)} aria-label="Ajouter">
           <Icon name="plus" size={14} />
         </button>
       </span>
@@ -34,7 +34,7 @@ function CardRow({ card }: { card: DeckCard }) {
   );
 }
 
-export function DeckPanel({ onClose }: { onClose?: () => void }) {
+export function DeckPanel({ onClose, embedded }: { onClose?: () => void; embedded?: boolean }) {
   const cards = useDeckStore((s) => s.cards);
   const clearCards = useDeckStore((s) => s.clearCards);
   const [showWarnings, setShowWarnings] = useState(false);
@@ -52,14 +52,16 @@ export function DeckPanel({ onClose }: { onClose?: () => void }) {
   return (
     <div className={styles.panel}>
       <header className={styles.head}>
-        <div className={styles.headTop}>
-          <span className={styles.headTitle}>{fr.builder.currentDeck}</span>
-          {onClose && (
-            <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Fermer">
-              <Icon name="close" size={16} />
-            </button>
-          )}
-        </div>
+        {!embedded && (
+          <div className={styles.headTop}>
+            <span className={styles.headTitle}>{fr.builder.currentDeck}</span>
+            {onClose && (
+              <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Fermer">
+                <Icon name="close" size={16} />
+              </button>
+            )}
+          </div>
+        )}
         <div className={styles.totalRow}>
           <span className={[styles.total, complete ? styles.totalOk : ""].join(" ")}>{stats.total}</span>
           <span className={styles.totalMax}>/ 60</span>

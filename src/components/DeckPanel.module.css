@@ -229,6 +229,22 @@
   background: var(--surface-hover);
 }
 
+.minus {
+  color: var(--danger) !important;
+  border-color: rgba(248, 113, 113, 0.3) !important;
+}
+.minus:hover {
+  background: var(--danger-soft) !important;
+}
+
+.plus {
+  color: var(--success) !important;
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+.plus:hover {
+  background: var(--success-soft) !important;
+}
+
 .qty {
   min-width: 22px;
   text-align: center;

@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useCardSearch, useSets } from "../hooks/useCards";
+import { useCardBrowse, useCardSearch, useSets } from "../hooks/useCards";
 import { useDebounce } from "../lib/useDebounce";
-import { buildSetRankMap, sortCards } from "../lib/cardSort";
+import { buildSetRankMap, orderSetsByRecency, sortCards } from "../lib/cardSort";
 import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
+import type { CardSection } from "../components/CardGrid";
 import type { GridSize } from "../components/CardGrid";
 import { FilterBar } from "../components/FilterBar";
 import { CardDetailModal } from "../components/CardDetailModal";
@@ -22,6 +23,19 @@ const DENSITY_OPTIONS: { value: GridSize; label: string }[] = [
   { value: "large", label: fr.cards.densityLarge },
 ];
 
+function hasFacetFilters(f: CardFilters): boolean {
+  return !!(
+    f.categories?.length ||
+    f.types?.length ||
+    f.subtypes?.length ||
+    f.rarities?.length ||
+    f.regulationMarks?.length ||
+    f.set ||
+    f.standardLegal ||
+    f.expandedLegal
+  );
+}
+
 export function Cards() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<CardFilters>({});
@@ -32,27 +46,45 @@ export function Cards() {
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
 
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useCardSearch(debounced, filters, sort);
+  // Mode "classeur" : exploration pure (sans recherche ni filtre), tri par set.
+  const binderMode =
+    !debounced.trim() && !hasFacetFilters(filters) && (sort === "set-recent" || sort === "set-old");
 
+  const orderedSets = useMemo(
+    () => orderSetsByRecency(sets ?? [], sort !== "set-old"),
+    [sets, sort],
+  );
   const setRank = useMemo(() => buildSetRankMap(sets ?? []), [sets]);
-  const cards: CardBrief[] = useMemo(() => {
-    const flat = data?.pages.flatMap((p) => p.items) ?? [];
-    return sortCards(flat, sort, setRank);
-  }, [data, sort, setRank]);
 
-  const showResults = !isLoading && !isError && cards.length > 0;
+  const browse = useCardBrowse(orderedSets, `${sort}:${orderedSets.length}`, binderMode);
+  const flat = useCardSearch(debounced, filters, sort, !binderMode);
+  const q = binderMode ? browse : flat;
+
+  // Données aplaties (mode recherche) ou en sections (mode classeur)
+  const flatCards: CardBrief[] = useMemo(() => {
+    if (binderMode) return [];
+    const items = flat.data?.pages.flatMap((p) => p.items) ?? [];
+    return sortCards(items, sort, setRank);
+  }, [binderMode, flat.data, sort, setRank]);
+
+  const sections: CardSection[] = useMemo(() => {
+    if (!binderMode) return [];
+    return (browse.data?.pages ?? []).map((p) => ({
+      key: p.set.id,
+      title: p.set.name,
+      subtitle: `${p.set.releaseDate?.slice(0, 4) ?? ""} · ${p.items.length} cartes`.trim(),
+      cards: p.items,
+    }));
+  }, [binderMode, browse.data]);
+
+  const count = binderMode
+    ? sections.reduce((s, sec) => s + sec.cards.length, 0)
+    : flatCards.length;
+  const loading = q.isLoading || (binderMode && !sets);
+  const showResults = !loading && !q.isError && count > 0;
 
   return (
     <div className={styles.page}>
-      {/* Hero compact */}
       <header className={styles.hero}>
         <div className={styles.heroLeft}>
           <span className={styles.titleIcon}>
@@ -71,7 +103,6 @@ export function Cards() {
         </div>
       </header>
 
-      {/* Recherche */}
       <div className={styles.searchRow}>
         <Input
           sizeVariant="lg"
@@ -89,58 +120,49 @@ export function Cards() {
         sort={sort}
         onSortChange={setSort}
         sets={sets}
-        resultCount={cards.length}
-        hasMore={hasNextPage}
+        resultCount={count}
+        hasMore={q.hasNextPage}
       />
 
-      {/* Barre de résultats + densité */}
       {showResults && (
         <div className={styles.resultBar}>
           <div className={styles.resultInfo}>
-            <span className={styles.count}>{fr.cards.shown(cards.length)}</span>
-            {hasNextPage && <span className={styles.scrollHint}>· {fr.cards.scrollMore}</span>}
+            <span className={styles.count}>{fr.cards.shown(count)}</span>
+            {q.hasNextPage && <span className={styles.scrollHint}>· {fr.cards.scrollMore}</span>}
           </div>
           <div className={styles.density}>
             <span className={styles.densityLabel}>{fr.cards.density}</span>
-            <Segmented
-              options={DENSITY_OPTIONS}
-              value={size}
-              onChange={setSize}
-              ariaLabel={fr.cards.density}
-            />
+            <Segmented options={DENSITY_OPTIONS} value={size} onChange={setSize} ariaLabel={fr.cards.density} />
           </div>
         </div>
       )}
 
-      {isError ? (
+      {q.isError ? (
         <EmptyState
           tone="danger"
           icon={<Icon name="alert" size={26} />}
           title={fr.states.errorTitle}
           body={fr.states.errorBody}
           action={
-            <Button variant="ghost" onClick={() => refetch()}>
+            <Button variant="ghost" onClick={() => q.refetch()}>
               {fr.states.retry}
             </Button>
           }
         />
-      ) : isLoading ? (
+      ) : loading ? (
         <CardGrid cards={[]} skeletonCount={24} size={size} />
-      ) : cards.length === 0 ? (
-        <EmptyState
-          icon={<Icon name="empty" size={26} />}
-          title={fr.states.emptyTitle}
-          body={fr.states.emptyBody}
-        />
+      ) : count === 0 ? (
+        <EmptyState icon={<Icon name="empty" size={26} />} title={fr.states.emptyTitle} body={fr.states.emptyBody} />
       ) : (
         <CardGrid
-          cards={cards}
+          cards={binderMode ? undefined : flatCards}
+          sections={binderMode ? sections : undefined}
           size={size}
           rarityHint={filters.rarities}
           onCardClick={(c) => setSelected(c.providerId)}
-          loadingMore={isFetchingNextPage}
+          loadingMore={q.isFetchingNextPage}
           onReachEnd={() => {
-            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+            if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage();
           }}
         />
       )}

@@ -13,8 +13,16 @@ const COL_MIN: Record<GridSize, string> = {
   large: "190px",
 };
 
-interface CardGridProps {
+export interface CardSection {
+  key: string;
+  title: string;
+  subtitle?: string;
   cards: CardBrief[];
+}
+
+interface CardGridProps {
+  cards?: CardBrief[];
+  sections?: CardSection[];
   onCardClick?: (card: CardBrief) => void;
   loadingMore?: boolean;
   onReachEnd?: () => void;
@@ -26,6 +34,7 @@ interface CardGridProps {
 
 export function CardGrid({
   cards,
+  sections,
   onCardClick,
   loadingMore,
   onReachEnd,
@@ -52,40 +61,56 @@ export function CardGrid({
 
   const gridStyle = { ["--col-min" as string]: COL_MIN[size] } as CSSProperties;
 
+  const renderTile = (card: CardBrief) => (
+    <CardTile
+      key={card.id}
+      card={card}
+      onClick={onCardClick}
+      rarityHint={rarityHint}
+      inDeckQty={getQty?.(card)}
+    />
+  );
+
+  const skeletons = (n: number) =>
+    Array.from({ length: n }).map((_, i) => (
+      <div key={i} className={styles.skelTile}>
+        <Skeleton height="100%" radius="var(--radius-md)" className={styles.skelImg} />
+        <Skeleton width="70%" height="12px" />
+      </div>
+    ));
+
   if (skeletonCount > 0) {
     return (
       <div className={styles.grid} style={gridStyle}>
-        {Array.from({ length: skeletonCount }).map((_, i) => (
-          <div key={i} className={styles.skelTile}>
-            <Skeleton height="100%" radius="var(--radius-md)" className={styles.skelImg} />
-            <Skeleton width="70%" height="12px" />
-          </div>
-        ))}
+        {skeletons(skeletonCount)}
       </div>
     );
   }
 
   return (
     <>
-      <div className={styles.grid} style={gridStyle}>
-        {cards.map((card) => (
-          <CardTile
-            key={card.id}
-            card={card}
-            onClick={onCardClick}
-            rarityHint={rarityHint}
-            inDeckQty={getQty?.(card)}
-          />
-        ))}
-      </div>
+      {sections
+        ? sections
+            .filter((s) => s.cards.length > 0)
+            .map((s) => (
+              <section key={s.key} className={styles.section}>
+                <div className={styles.sectionHead}>
+                  <span className={styles.sectionTitle}>{s.title}</span>
+                  {s.subtitle && <span className={styles.sectionSub}>{s.subtitle}</span>}
+                </div>
+                <div className={styles.grid} style={gridStyle}>
+                  {s.cards.map(renderTile)}
+                </div>
+              </section>
+            ))
+        : (
+            <div className={styles.grid} style={gridStyle}>
+              {(cards ?? []).map(renderTile)}
+            </div>
+          )}
       {loadingMore && (
         <div className={styles.grid} style={{ ...gridStyle, marginTop: 18 }}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className={styles.skelTile}>
-              <Skeleton height="100%" radius="var(--radius-md)" className={styles.skelImg} />
-              <Skeleton width="70%" height="12px" />
-            </div>
-          ))}
+          {skeletons(8)}
         </div>
       )}
       <div ref={sentinelRef} className={styles.sentinel} />

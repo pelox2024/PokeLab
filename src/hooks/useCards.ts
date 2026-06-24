@@ -1,7 +1,9 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { activeProvider } from "../api/cardApi";
 import { fetchPokemontcgPricing } from "../api/pokemontcgPricing";
-import type { CardFilters, CardPage, CardRecord, SortKey } from "../api/types";
+import { fetchPokemontcgSetMeta } from "../api/pokemontcgSets";
+import { numberKey, parseCardId } from "../lib/cardSort";
+import type { CardBrief, CardFilters, CardPage, CardRecord, SetInfo, SortKey } from "../api/types";
 
 const PAGE_SIZE = 40;
 
@@ -9,9 +11,10 @@ const PAGE_SIZE = 40;
  * Recherche paginée (infinite scroll) des cartes, avec filtres et tri.
  * La requête est conservée en cache par TanStack Query.
  */
-export function useCardSearch(search: string, filters: CardFilters, sort: SortKey) {
+export function useCardSearch(search: string, filters: CardFilters, sort: SortKey, enabled = true) {
   return useInfiniteQuery<CardPage>({
     queryKey: ["cards", "search", search, filters, sort],
+    enabled,
     queryFn: ({ pageParam }) =>
       activeProvider.searchCards({
         search,
@@ -23,6 +26,35 @@ export function useCardSearch(search: string, filters: CardFilters, sort: SortKe
     initialPageParam: 1,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export interface BrowsePage {
+  set: SetInfo;
+  items: CardBrief[];
+  index: number;
+}
+
+/**
+ * Mode "classeur" : charge les cartes set par set (le plus récent d'abord),
+ * triées par numéro croissant. Utilisé pour l'exploration par défaut.
+ */
+export function useCardBrowse(orderedSets: SetInfo[], keySig: string, enabled: boolean) {
+  return useInfiniteQuery<BrowsePage>({
+    queryKey: ["browse", keySig],
+    enabled: enabled && orderedSets.length > 0,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const index = pageParam as number;
+      const set = orderedSets[index];
+      const page = await activeProvider.searchCards({ filters: { set: set.id }, pageSize: 600 });
+      const items = [...page.items].sort(
+        (a, b) => numberKey(parseCardId(a.providerId).localId) - numberKey(parseCardId(b.providerId).localId),
+      );
+      return { set, items, index };
+    },
+    getNextPageParam: (last) => (last.index + 1 < orderedSets.length ? last.index + 1 : undefined),
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -66,11 +98,20 @@ export function usePokemontcgPrice(card: CardRecord | undefined) {
   });
 }
 
-/** Liste des extensions (sets) pour le filtre — cache long. */
+/** Liste des extensions (sets), enrichies avec la date de sortie réelle. */
 export function useSets() {
   return useQuery({
     queryKey: ["sets"],
-    queryFn: () => activeProvider.getSets(),
+    queryFn: async () => {
+      const [sets, meta] = await Promise.all([
+        activeProvider.getSets(),
+        fetchPokemontcgSetMeta(),
+      ]);
+      return sets.map((s) => {
+        const m = meta.get(s.name.toLowerCase());
+        return m?.releaseDate ? { ...s, releaseDate: m.releaseDate } : s;
+      });
+    },
     staleTime: 24 * 60 * 60 * 1000,
   });
 }

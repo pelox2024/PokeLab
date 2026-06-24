@@ -14,14 +14,28 @@ export function numberKey(localId: string): number {
   return Number.isNaN(n) ? 99999 : n;
 }
 
+/** Valeur de récence d'un set (plus grand = plus récent). */
+export function setRecencyValue(s: SetInfo): number {
+  if (s.releaseDate) {
+    const t = Date.parse(s.releaseDate.replace(/\//g, "-"));
+    if (!Number.isNaN(t)) return t;
+  }
+  // Pas de date : on classe par série (récente d'abord) puis id.
+  return -seriesRank(s.seriesId) * 1e9;
+}
+
+/** Trie les sets par récence (le plus récent d'abord par défaut). */
+export function orderSetsByRecency(sets: SetInfo[], recentFirst = true): SetInfo[] {
+  return [...sets].sort((a, b) => {
+    const d = setRecencyValue(b) - setRecencyValue(a);
+    if (d !== 0) return recentFirst ? d : -d;
+    return recentFirst ? b.id.localeCompare(a.id) : a.id.localeCompare(b.id);
+  });
+}
+
 /** Map setId -> rang de récence (0 = le plus récent). */
 export function buildSetRankMap(sets: SetInfo[]): Map<string, number> {
-  const ordered = [...sets].sort((a, b) => {
-    const ra = seriesRank(a.seriesId);
-    const rb = seriesRank(b.seriesId);
-    if (ra !== rb) return ra - rb; // série récente d'abord
-    return b.id.localeCompare(a.id); // set récent d'abord (id décroissant)
-  });
+  const ordered = orderSetsByRecency(sets, true);
   const map = new Map<string, number>();
   ordered.forEach((s, i) => map.set(s.id, i));
   return map;

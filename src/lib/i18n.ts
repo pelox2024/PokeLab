@@ -123,6 +123,7 @@ export const fr = {
     subtitle: "Construisez vos decks de 60 cartes",
     currentDeck: "Deck actuel",
     viewDeck: "Voir le deck",
+    addCards: "Ajouter des cartes",
     emptyDeck: "Cliquez une carte pour l'ajouter au deck.",
     seeErrors: "Voir les erreurs",
     clear: "Vider le deck",
