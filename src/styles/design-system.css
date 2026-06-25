@@ -57,7 +57,9 @@
   --blur: 18px;
 
   /* --- Typo --- */
-  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Geist Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Space Grotesk Variable", "Geist Variable", system-ui, sans-serif;
+  --font: var(--font-body);
   --fs-xs: 0.72rem;
   --fs-sm: 0.82rem;
   --fs-md: 0.95rem;
