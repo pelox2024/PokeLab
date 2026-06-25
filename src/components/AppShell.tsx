@@ -13,6 +13,8 @@ const NAV = [
   { to: "/reglages", label: fr.nav.settings, icon: "settings" as const },
 ];
 
+const NAV_HOME = { to: "/", label: "Accueil", icon: "spark" as const };
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -20,7 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className={styles.shell}>
       <header className={styles.nav}>
         <div className={styles.navInner}>
-          <NavLink to="/cartes" className={styles.brand} onClick={() => setMenuOpen(false)}>
+          <NavLink to="/" className={styles.brand} onClick={() => setMenuOpen(false)}>
             <span className={styles.logo}>
               <Icon name="spark" size={18} />
             </span>
@@ -64,10 +66,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       {menuOpen && (
         <div className={styles.menuBackdrop} onClick={() => setMenuOpen(false)}>
           <nav className={styles.menuDrawer} onClick={(e) => e.stopPropagation()}>
-            {NAV.map((item) => (
+            {[NAV_HOME, ...NAV].map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === "/"}
                 onClick={() => setMenuOpen(false)}
                 className={({ isActive }) =>
                   [styles.menuLink, isActive ? styles.menuLinkActive : ""].filter(Boolean).join(" ")

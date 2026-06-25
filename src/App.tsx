@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
+import { Home } from "./pages/Home";
 import { Cards } from "./pages/Cards";
 import { Builder } from "./pages/Builder";
 import { MyDecks } from "./pages/MyDecks";
@@ -9,7 +10,7 @@ export default function App() {
   return (
     <AppShell>
       <Routes>
-        <Route path="/" element={<Navigate to="/cartes" replace />} />
+        <Route path="/" element={<Home />} />
         <Route path="/cartes" element={<Cards />} />
         <Route path="/builder" element={<Builder />} />
         <Route path="/decks" element={<MyDecks />} />

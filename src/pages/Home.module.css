@@ -1,0 +1,340 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ---- Bento ---- */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(118px, auto);
+  gap: 16px;
+  grid-template-areas:
+    "hero hero decks"
+    "cards stat decks"
+    "newset newset decks";
+}
+
+.tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  padding: 22px;
+  transition: border-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+}
+
+a.tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---- Hero ---- */
+.hero {
+  grid-area: hero;
+  padding: 34px 36px;
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(91, 140, 255, 0.18), transparent 55%),
+    radial-gradient(120% 160% at 100% 100%, rgba(154, 107, 255, 0.16), transparent 55%),
+    var(--surface-glass);
+}
+
+.heroGlow {
+  position: absolute;
+  inset: -40% 30% auto -10%;
+  height: 320px;
+  background: radial-gradient(closest-side, var(--accent-glow), transparent 70%);
+  filter: blur(40px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.heroInner {
+  position: relative;
+}
+
+.kicker {
+  display: inline-block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.4vw, 2.9rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.heroSub {
+  margin: 14px 0 0;
+  max-width: 50ch;
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+}
+
+.heroCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.ctaPrimary,
+.ctaGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 20px;
+  border-radius: var(--radius-pill);
+  font-weight: 650;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: transform var(--t-fast), background var(--t-fast), border-color var(--t-fast);
+}
+
+.ctaPrimary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: var(--shadow-glow);
+}
+
+.ctaPrimary:hover {
+  transform: translateY(-1px);
+}
+
+.ctaGhost {
+  color: var(--text);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+}
+
+.ctaGhost:hover {
+  border-color: var(--border-strong);
+}
+
+/* ---- Decks récents ---- */
+.decks {
+  grid-area: decks;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tileHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tileTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tileLink {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.deckList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deckRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+
+.deckRow:hover {
+  background: var(--surface-hover);
+}
+
+.deckName {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deckCount {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.deckOk {
+  color: var(--success);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* ---- Tuiles d'action / stat ---- */
+.action,
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text);
+}
+
+.action {
+  grid-area: cards;
+  justify-content: flex-end;
+}
+
+.actionTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.actionSub {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.stat {
+  grid-area: stat;
+  justify-content: flex-end;
+}
+
+.statNum {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.newset {
+  grid-area: newset;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.setLogo {
+  height: 42px;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+.setName {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.setMeta {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.arrow {
+  position: absolute;
+  top: 20px;
+  right: 22px;
+  font-size: 1.1rem;
+  color: var(--text-faint);
+  transition: transform var(--t-fast), color var(--t-fast);
+}
+
+a.tile:hover .arrow {
+  transform: translateX(3px);
+  color: var(--text);
+}
+
+/* Accents colorés par tuile (halo discret) */
+.accentBlue {
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(74, 168, 255, 0.16), transparent 55%),
+    var(--surface-glass);
+}
+.accentViolet {
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(154, 107, 255, 0.18), transparent 55%),
+    var(--surface-glass);
+}
+.accentTeal {
+  background:
+    radial-gradient(120% 140% at 0% 100%, rgba(0, 184, 217, 0.16), transparent 55%),
+    var(--surface-glass);
+}
+
+.footer {
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  margin: 6px 0 0;
+}
+
+@media (max-width: 860px) {
+  .bento {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "hero"
+      "decks"
+      "cards"
+      "stat"
+      "newset";
+  }
+  .hero {
+    padding: 26px 22px;
+  }
+}
