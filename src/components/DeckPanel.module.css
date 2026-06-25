@@ -366,6 +366,16 @@
   color: var(--text-faint);
 }
 
+/* Accent d'énergie (langage de types Pokémon) */
+.typeAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 1;
+}
+
 .pileQty {
   position: absolute;
   top: 4px;

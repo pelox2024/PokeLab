@@ -30,6 +30,16 @@ function toProviderId(cardId?: string): string | undefined {
   return cardId.slice("tcgdex:".length);
 }
 
+const KNOWN_TYPES = new Set([
+  "grass", "fire", "water", "lightning", "psychic", "fighting",
+  "darkness", "metal", "dragon", "colorless", "fairy",
+]);
+/** Couleur d'énergie (langage visuel Pokémon) du 1er type d'une carte. */
+function typeColorVar(types?: string[]): string | undefined {
+  const t = types?.[0]?.toLowerCase();
+  return t && KNOWN_TYPES.has(t) ? `var(--type-${t})` : undefined;
+}
+
 /** Tuile visuelle d'une carte du deck (vues "grille" et "piles"). Contrôles au
  *  survol (− qté +, retirer) ; clic sur l'image → détails. Sur tactile, les
  *  contrôles restent visibles. */
@@ -46,6 +56,7 @@ function DeckCardTile({
   const providerId = toProviderId(card.cardId);
   const stop = (e: React.MouseEvent) => e.stopPropagation();
   const stacked = view === "stacks" && card.quantity > 1;
+  const typeColor = typeColorVar(card.types);
 
   return (
     <div className={styles.pile}>
@@ -62,6 +73,7 @@ function DeckCardTile({
             <Icon name="cards" size={18} />
           </span>
         )}
+        {typeColor && <span className={styles.typeAccent} style={{ background: typeColor }} />}
         <span className={styles.pileQty}>×{card.quantity}</span>
         <button
           type="button"

@@ -1,55 +1,93 @@
 import type { ReactNode } from "react";
-import { EmptyState } from "../components/ui/EmptyState";
 import { Icon } from "../components/ui/Icon";
+import { Logo } from "../components/ui/Logo";
 import { fr } from "../lib/i18n";
-import styles from "./Cards.module.css";
+import styles from "./Placeholder.module.css";
 
-interface PlaceholderPageProps {
-  icon: ReactNode;
+interface Feature {
+  icon: Parameters<typeof Icon>[0]["name"];
   title: string;
-  subtitle: string;
-  body: string;
+  sub: string;
 }
 
-function PlaceholderPage({ icon, title, subtitle, body }: PlaceholderPageProps) {
+interface ComingSoonProps {
+  kicker: string;
+  title: string;
+  subtitle: string;
+  panelTitle: string;
+  features: Feature[];
+}
+
+function ComingSoon({ kicker, title, subtitle, panelTitle, features }: ComingSoonProps): ReactNode {
   return (
     <div className={styles.page}>
-      <header className={styles.head}>
-        <div className={styles.titleRow}>
-          <span className={styles.titleIcon}>{icon}</span>
+      <header className={styles.header}>
+        <span className={styles.kicker}>
+          <Logo size={14} /> {kicker}
+        </span>
+        <h1 className={styles.title}>{title}</h1>
+        <p className={styles.subtitle}>{subtitle}</p>
+      </header>
+
+      <section className={styles.panel}>
+        <div className={styles.panelTop}>
+          <span className={styles.mark}>
+            <Logo size={26} />
+          </span>
           <div>
-            <h1 className={styles.title}>{title}</h1>
-            <p className={styles.subtitle}>{subtitle}</p>
+            <span className={styles.badge}>{fr.states.comingSoonTitle}</span>
+            <div className={styles.panelTitle}>{panelTitle}</div>
           </div>
         </div>
-      </header>
-      <EmptyState
-        icon={<Icon name="spark" size={26} />}
-        title={fr.states.comingSoonTitle}
-        body={body}
-      />
+
+        <ul className={styles.features}>
+          {features.map((f) => (
+            <li key={f.title} className={styles.feature}>
+              <span className={styles.featureIcon}>
+                <Icon name={f.icon} size={16} />
+              </span>
+              <span className={styles.featureText}>
+                <span className={styles.featureTitle}>{f.title}</span>
+                <span className={styles.featureSub}>{f.sub}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
 
 export function Analysis() {
   return (
-    <PlaceholderPage
-      icon={<Icon name="chart" size={22} />}
-      title={fr.nav.analysis}
-      subtitle="Statistiques et alertes de deck"
-      body={fr.analysis.comingSoon}
+    <ComingSoon
+      kicker={fr.nav.analysis}
+      title="Analyse de tes decks"
+      subtitle="Une vue d'ensemble de tous tes decks et des contrôles de cohérence, au-delà des statistiques déjà présentes dans le Constructeur."
+      panelTitle="Ce qui arrive ici"
+      features={[
+        { icon: "chart", title: "Statistiques agrégées", sub: "Répartition, courbes et moyennes sur l'ensemble de tes decks." },
+        { icon: "alert", title: "Contrôles de cohérence", sub: "Lignes d'évolution incomplètes, ratios Énergie, max 4 exemplaires." },
+        { icon: "decks", title: "Comparaison de decks", sub: "Mettre deux decks côte à côte (composition, prix, mulligan)." },
+        { icon: "spark", title: "Tendances méta", sub: "Archétypes et cartes populaires (évolution future via Limitless)." },
+      ]}
     />
   );
 }
 
 export function Settings() {
   return (
-    <PlaceholderPage
-      icon={<Icon name="settings" size={22} />}
-      title={fr.nav.settings}
-      subtitle="Préférences de l'application"
-      body={fr.settings.comingSoon}
+    <ComingSoon
+      kicker={fr.nav.settings}
+      title="Réglages"
+      subtitle="Personnalise l'affichage et gère tes données. La synchronisation multi-appareils arrivera avec les comptes."
+      panelTitle="Bientôt configurable"
+      features={[
+        { icon: "cards", title: "Langue des cartes", sub: "Affichage FR / EN (les données restent compatibles decklists)." },
+        { icon: "sort", title: "Densité & thème", sub: "Préférences d'affichage par défaut de la grille et du deck." },
+        { icon: "decks", title: "Données locales", sub: "Exporter / importer / effacer tes decks et ta collection." },
+        { icon: "spark", title: "Compte & sync", sub: "Connexion et synchronisation cloud (à venir)." },
+      ]}
     />
   );
 }
