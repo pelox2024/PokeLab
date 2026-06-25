@@ -108,10 +108,12 @@ export function computeStats(cards: DeckCard[]): DeckStats {
   for (const c of cards) {
     const q = c.quantity;
     if (c.category === "Pokemon") {
+      // On ne compte un stade que s'il est connu : une carte non enrichie
+      // (sous-types absents) ne doit pas gonfler « De base ».
       if (has(c, "Stage2")) stages.stage2 += q;
       else if (has(c, "Stage1")) stages.stage1 += q;
       else if (has(c, "VMAX") || has(c, "VSTAR")) stages.vEvo += q;
-      else stages.basic += q;
+      else if (has(c, "Basic")) stages.basic += q;
 
       const suffix = c.suffix?.toLowerCase();
       if (suffix === "ex") mechanics.ex += q;
