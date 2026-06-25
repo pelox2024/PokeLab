@@ -16,9 +16,11 @@ interface CardTileProps {
   rarityHint?: string[];
   /** Quantité présente dans le deck en cours (badge). */
   inDeckQty?: number;
+  /** Quantité possédée en collection (badge). */
+  owned?: number;
 }
 
-export function CardTile({ card, onClick, rarityHint, inDeckQty }: CardTileProps) {
+export function CardTile({ card, onClick, rarityHint, inDeckQty, owned }: CardTileProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const queryClient = useQueryClient();
@@ -99,6 +101,12 @@ export function CardTile({ card, onClick, rarityHint, inDeckQty }: CardTileProps
           )}
 
           {inDeckQty != null && inDeckQty > 0 && <span className={styles.deckBadge}>{inDeckQty}</span>}
+          {owned != null && owned > 0 && (
+            <span className={styles.ownedBadge} title={`${owned} en collection`}>
+              <Icon name="decks" size={11} />
+              {owned}
+            </span>
+          )}
         </div>
       </div>
 

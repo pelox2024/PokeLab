@@ -6,6 +6,7 @@ import { useFoilHover } from "../hooks/useFoilHover";
 import { getCardVisualTreatment } from "../lib/foil";
 import { cardmarketLink, canShowPrice, hasExactLink, pickCardmarket } from "../lib/pricing";
 import { useDeckStore } from "../store/deckStore";
+import { adjustOwned, useOwnedMap } from "../db/collection";
 import { TYPE_COLORS } from "../lib/filters";
 import { fr } from "../lib/i18n";
 import { Modal } from "./ui/Modal";
@@ -292,6 +293,29 @@ function AddToDeck({ card }: { card: CardRecord }) {
   );
 }
 
+function OwnedControl({ card }: { card: CardRecord }) {
+  const owned = useOwnedMap();
+  const qty = owned.get(card.id) ?? 0;
+  const input = { cardId: card.id, name: card.name, setCode: card.setId, number: card.number };
+  return (
+    <div className={[styles.owned, qty > 0 ? styles.ownedActive : ""].filter(Boolean).join(" ")}>
+      <span className={styles.ownedLabel}>
+        <Icon name="decks" size={15} />
+        {fr.detail.owned}
+      </span>
+      <span className={styles.ownedStepper}>
+        <button type="button" onClick={() => adjustOwned(input, -1)} disabled={qty <= 0} aria-label="Moins">
+          <Icon name="minus" size={14} />
+        </button>
+        <span className={styles.ownedQty}>{qty}</span>
+        <button type="button" onClick={() => adjustOwned(input, 1)} aria-label="Plus">
+          <Icon name="plus" size={14} />
+        </button>
+      </span>
+    </div>
+  );
+}
+
 function DetailContent({
   card,
   onSelectCard,
@@ -340,6 +364,8 @@ function DetailContent({
             {card.hp != null && <span className={styles.hp}>{card.hp} PV</span>}
           </div>
         </header>
+
+        <OwnedControl card={card} />
 
         {/* Actions rapides */}
         <div className={styles.quickActions}>

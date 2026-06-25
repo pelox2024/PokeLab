@@ -36,6 +36,7 @@ interface CardGridProps {
   size?: GridSize;
   rarityHint?: string[];
   getQty?: (card: CardBrief) => number;
+  getOwned?: (card: CardBrief) => number;
 }
 
 export function CardGrid({
@@ -48,6 +49,7 @@ export function CardGrid({
   size = "normal",
   rarityHint,
   getQty,
+  getOwned,
 }: CardGridProps) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -76,6 +78,7 @@ export function CardGrid({
       onClick={onCardClick}
       rarityHint={rarityHint}
       inDeckQty={getQty?.(card)}
+      owned={getOwned?.(card)}
     />
   );
 

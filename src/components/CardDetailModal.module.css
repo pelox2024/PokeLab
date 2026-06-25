@@ -185,6 +185,65 @@
   gap: 8px;
 }
 
+/* ---- Ma collection (possédé) ---- */
+.owned {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-faint);
+}
+
+.ownedActive {
+  border-color: color-mix(in srgb, var(--success) 40%, transparent);
+  background: var(--success-soft);
+}
+
+.ownedLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  color: var(--text);
+}
+
+.ownedStepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ownedStepper button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  background: var(--surface-glass);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.ownedStepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ownedQty {
+  min-width: 28px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Autres versions */
 .versions {
   display: flex;

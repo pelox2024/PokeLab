@@ -59,6 +59,7 @@ export const fr = {
     loadError: "Détails indisponibles pour cette carte.",
     copyName: "Copier le nom",
     copyId: "Copier l'ID",
+    owned: "Ma collection",
     openImage: "Ouvrir l'image",
     copied: "Copié",
     addToDeckSoon: "Disponible bientôt dans le Constructeur",

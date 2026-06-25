@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useSets } from "../hooks/useCards";
 import { useCardExplorer } from "../hooks/useCardExplorer";
+import { useOwnedMap } from "../db/collection";
 import { useDebounce } from "../lib/useDebounce";
 import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
@@ -31,6 +32,7 @@ export function Cards() {
 
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
+  const owned = useOwnedMap();
 
   const { binderMode, sections, flatCards, count, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
     useCardExplorer(debounced, filters, sort, sets, { excludePocket: true });
@@ -117,6 +119,7 @@ export function Cards() {
           sections={binderMode ? sections : undefined}
           size={size}
           rarityHint={filters.rarities}
+          getOwned={(c) => owned.get(c.id) ?? 0}
           onCardClick={(c) => setSelected(c.providerId)}
           loadingMore={isFetchingNextPage || (count === 0 && hasNextPage)}
           onReachEnd={fetchNextPage}
