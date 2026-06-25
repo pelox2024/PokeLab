@@ -101,36 +101,45 @@ export function Builder() {
       (c) => c.cardId?.startsWith("tcgdex:") && !enrichRef.current.has(c.cardId),
     );
     if (todo.length === 0) return;
-    let cancelled = false;
+    let active = true;
     for (const c of todo) enrichRef.current.add(c.cardId!);
-    void Promise.all(
-      todo.map(async (c) => {
-        const pid = c.cardId!.slice(c.cardId!.indexOf(":") + 1);
-        try {
-          const rec = await queryClient.fetchQuery<CardRecord>({
-            queryKey: ["cards", "detail", pid],
-            queryFn: () => activeProvider.getCard(pid),
-            staleTime: 30 * 60 * 1000,
-          });
-          if (cancelled) return;
-          enrich(c.cardId!, {
-            category: rec.category,
-            setCode: rec.setId,
-            number: rec.number,
-            rarity: rec.rarity,
-            subtypes: rec.subtypes,
-            suffix: rec.suffix,
-            hp: rec.hp,
-            types: rec.types,
-            imageUrl: rec.imageUrl ?? c.imageUrl,
-          });
-        } catch {
-          /* best-effort */
-        }
-      }),
-    );
+    // On récupère TOUTES les fiches puis on applique les patchs en une fois :
+    // appliquer au fil de l'eau re-déclencherait l'effet (dep [cards]) et
+    // annulerait les requêtes encore en vol (bug : une seule carte enrichie).
+    void (async () => {
+      const results = await Promise.all(
+        todo.map(async (c) => {
+          const pid = c.cardId!.slice(c.cardId!.indexOf(":") + 1);
+          try {
+            const rec = await queryClient.fetchQuery<CardRecord>({
+              queryKey: ["cards", "detail", pid],
+              queryFn: () => activeProvider.getCard(pid),
+              staleTime: 30 * 60 * 1000,
+            });
+            return { cardId: c.cardId!, rec, fallbackImg: c.imageUrl };
+          } catch {
+            return null;
+          }
+        }),
+      );
+      if (!active) return;
+      for (const r of results) {
+        if (!r) continue;
+        enrich(r.cardId, {
+          category: r.rec.category,
+          setCode: r.rec.setId,
+          number: r.rec.number,
+          rarity: r.rec.rarity,
+          subtypes: r.rec.subtypes,
+          suffix: r.rec.suffix,
+          hp: r.rec.hp,
+          types: r.rec.types,
+          imageUrl: r.rec.imageUrl ?? r.fallbackImg,
+        });
+      }
+    })();
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, [cards, queryClient, enrich]);
 
