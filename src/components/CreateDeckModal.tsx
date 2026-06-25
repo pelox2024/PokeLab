@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createDeck } from "../db/decks";
 import { useDeckStore } from "../store/deckStore";
+import { useSets } from "../hooks/useCards";
 import type { DeckCard, DeckFormat } from "../db/schema";
 import { parseDecklist } from "../lib/deckParser";
 import { resolveDecklist } from "../api/decklistResolver";
@@ -32,6 +33,7 @@ const STRATEGY_OPTIONS: { value: ResolveStrategy; label: string }[] = [
 export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const load = useDeckStore((s) => s.load);
+  const { data: sets } = useSets();
 
   const [tab, setTab] = useState<Tab>("create");
   const [name, setName] = useState("Nouveau deck");
@@ -72,7 +74,7 @@ export function CreateDeckModal({ open, onClose }: { open: boolean; onClose: () 
     }
     setResolving(true);
     try {
-      setResolved(await resolveDecklist(parsed.lines, strategy));
+      setResolved(await resolveDecklist(parsed.lines, { sets, strategy }));
     } finally {
       setResolving(false);
     }
