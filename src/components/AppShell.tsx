@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { fr } from "../lib/i18n";
 import { Icon } from "./ui/Icon";
+import { Logo } from "./ui/Logo";
 import styles from "./AppShell.module.css";
 
 const NAV = [
@@ -24,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className={styles.navInner}>
           <NavLink to="/" className={styles.brand} onClick={() => setMenuOpen(false)}>
             <span className={styles.logo}>
-              <Icon name="spark" size={18} />
+              <Logo size={20} />
             </span>
             <span className={styles.brandText}>
               {fr.app.name}
