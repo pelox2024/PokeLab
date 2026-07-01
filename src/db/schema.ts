@@ -87,6 +87,7 @@ export interface CollectionItem {
   name: string;
   setCode?: string;
   number?: string;
+  imageUrl?: string;
   variant: CardVariantKind;
   quantity: number;
   language: CardLanguage;

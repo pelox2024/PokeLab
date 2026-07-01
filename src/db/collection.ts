@@ -15,6 +15,7 @@ export interface OwnedInput {
   name: string;
   setCode?: string;
   number?: string;
+  imageUrl?: string;
 }
 
 /** Fixe la quantité possédée d'une carte (0 = retire de la collection). */
@@ -31,6 +32,7 @@ export async function setOwned(input: OwnedInput, qty: number): Promise<void> {
     name: input.name,
     setCode: input.setCode,
     number: input.number,
+    imageUrl: input.imageUrl ?? existing?.imageUrl,
     variant: "normal",
     quantity: qty,
     language: "en",
@@ -44,6 +46,15 @@ export async function setOwned(input: OwnedInput, qty: number): Promise<void> {
 export async function adjustOwned(input: OwnedInput, delta: number): Promise<void> {
   const existing = await db.collection.get(input.cardId);
   await setOwned(input, (existing?.quantity ?? 0) + delta);
+}
+
+/** Liste réactive des cartes possédées (récentes d'abord). */
+export function useCollection(): CollectionItem[] {
+  const items = useLiveQuery(() => db.collection.toArray(), []);
+  return useMemo(
+    () => [...(items ?? [])].sort((a, b) => (b.updatedAt > a.updatedAt ? 1 : -1)),
+    [items],
+  );
 }
 
 /** Map réactive cardId -> quantité possédée. */

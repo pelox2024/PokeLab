@@ -10,6 +10,7 @@ const NAV = [
   { to: "/cartes", label: fr.nav.cards, icon: "cards" as const },
   { to: "/builder", label: fr.nav.builder, icon: "builder" as const },
   { to: "/decks", label: fr.nav.myDecks, icon: "decks" as const },
+  { to: "/collection", label: "Collection", icon: "spark" as const },
   { to: "/analyse", label: fr.nav.analysis, icon: "chart" as const },
   { to: "/reglages", label: fr.nav.settings, icon: "settings" as const },
 ];

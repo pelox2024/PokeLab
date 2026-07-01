@@ -296,7 +296,7 @@ function AddToDeck({ card }: { card: CardRecord }) {
 function OwnedControl({ card }: { card: CardRecord }) {
   const owned = useOwnedMap();
   const qty = owned.get(card.id) ?? 0;
-  const input = { cardId: card.id, name: card.name, setCode: card.setId, number: card.number };
+  const input = { cardId: card.id, name: card.name, setCode: card.setId, number: card.number, imageUrl: card.imageUrl };
   return (
     <div className={[styles.owned, qty > 0 ? styles.ownedActive : ""].filter(Boolean).join(" ")}>
       <span className={styles.ownedLabel}>

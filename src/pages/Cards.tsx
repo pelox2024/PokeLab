@@ -123,7 +123,7 @@ export function Cards() {
           getOwned={(c) => owned.get(c.id) ?? 0}
           onOwnAdjust={(c, delta) =>
             adjustOwned(
-              { cardId: c.id, name: c.name, setCode: parseCardId(c.providerId).setId, number: c.localId },
+              { cardId: c.id, name: c.name, setCode: parseCardId(c.providerId).setId, number: c.localId, imageUrl: c.imageUrl },
               delta,
             )
           }
