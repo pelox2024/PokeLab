@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { fr } from "../lib/i18n";
 import { Icon } from "./ui/Icon";
 import { Logo } from "./ui/Logo";
@@ -19,6 +19,7 @@ const NAV_HOME = { to: "/", label: "Accueil", icon: "spark" as const };
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { pathname } = useLocation();
 
   return (
     <div className={styles.shell}>
@@ -86,7 +87,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <main className={styles.main}>{children}</main>
+      <main className={styles.main}>
+        <div key={pathname} className={styles.pageTransition}>
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
