@@ -4,6 +4,25 @@
   gap: 16px 14px;
 }
 
+/* Cascade d'apparition : on échelonne les premières tuiles seulement (les
+   suivantes, chargées à l'infini, apparaissent sans délai). */
+.grid > *:nth-child(1) { animation-delay: 0ms; }
+.grid > *:nth-child(2) { animation-delay: 22ms; }
+.grid > *:nth-child(3) { animation-delay: 44ms; }
+.grid > *:nth-child(4) { animation-delay: 66ms; }
+.grid > *:nth-child(5) { animation-delay: 88ms; }
+.grid > *:nth-child(6) { animation-delay: 110ms; }
+.grid > *:nth-child(7) { animation-delay: 132ms; }
+.grid > *:nth-child(8) { animation-delay: 154ms; }
+.grid > *:nth-child(9) { animation-delay: 176ms; }
+.grid > *:nth-child(10) { animation-delay: 198ms; }
+.grid > *:nth-child(11) { animation-delay: 220ms; }
+.grid > *:nth-child(12) { animation-delay: 242ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .grid > * { animation-delay: 0ms !important; }
+}
+
 @media (max-width: 640px) {
   .grid {
     gap: 12px 9px;

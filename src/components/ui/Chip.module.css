@@ -16,6 +16,7 @@
     background var(--t-fast),
     color var(--t-fast),
     border-color var(--t-fast),
+    transform var(--t-fast),
     box-shadow var(--t-fast);
 }
 
@@ -23,6 +24,10 @@
   color: var(--text);
   background: var(--surface-hover);
   border-color: var(--border-strong);
+}
+
+.chip:active {
+  transform: scale(0.95);
 }
 
 .active {

@@ -7,12 +7,17 @@
   border: none;
   cursor: pointer;
   text-align: left;
-  animation: fadeInUp var(--t-med);
+  animation: fadeInUp var(--t-med) backwards;
+  transition: transform var(--t-med);
   /* Culling natif : le navigateur saute le rendu/layout des tuiles hors écran
      (windowing zéro-JS). contain-intrinsic-size réserve la place pour garder la
      barre de défilement stable ; `auto` mémorise la taille réelle une fois rendue. */
   content-visibility: auto;
   contain-intrinsic-size: auto 280px;
+}
+
+.tile:hover {
+  transform: translateY(-4px);
 }
 
 .perspective {
