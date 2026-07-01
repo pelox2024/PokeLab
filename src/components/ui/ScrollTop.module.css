@@ -30,10 +30,10 @@
   transform: scale(0.94);
 }
 
-/* Sur mobile, on remonte le bouton au-dessus des barres d'action fixes. */
+/* Sur mobile, on remonte le bouton au-dessus de la nav basse + barre d'action. */
 @media (max-width: 860px) {
   .btn {
-    bottom: calc(96px + env(safe-area-inset-bottom));
+    bottom: calc(var(--bottomnav-h) + 76px);
   }
 }
 

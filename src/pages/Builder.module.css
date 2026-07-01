@@ -150,12 +150,12 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
-  z-index: 75;
+  bottom: var(--bottomnav-h); /* au-dessus de la barre de navigation basse */
+  z-index: 74;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 16px max(14px, env(safe-area-inset-bottom));
+  padding: 12px 16px;
   background: rgba(9, 12, 20, 0.92);
   border-top: 1px solid var(--border-glass);
   backdrop-filter: blur(16px);

@@ -70,6 +70,7 @@
   /* --- Layout --- */
   --nav-h: 64px;
   --maxw: 1440px;
+  --bottomnav-h: calc(58px + env(safe-area-inset-bottom));
 
   /* --- Motion (easing organique + durées, tendances 2026) --- */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);

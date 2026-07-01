@@ -217,12 +217,12 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
-  z-index: 75;
+  bottom: var(--bottomnav-h); /* au-dessus de la barre de navigation basse */
+  z-index: 74;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  padding: 10px 12px;
   background: rgba(7, 9, 15, 0.86);
   border-top: 1px solid var(--border-faint);
   backdrop-filter: blur(var(--blur));

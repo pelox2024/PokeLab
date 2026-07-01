@@ -207,6 +207,37 @@
   }
 }
 
+/* ---- Navigation basse (mobile) ---- */
+.bottomNav {
+  display: none;
+}
+
+.bottomTab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: none;
+  background: none;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
+
+.bottomTab:active {
+  transform: scale(0.94);
+}
+
+.bottomTabActive {
+  color: var(--accent);
+}
+
 @media (max-width: 860px) {
   .links {
     display: none;
@@ -218,10 +249,32 @@
     display: none;
   }
   .burger {
-    display: inline-flex;
+    display: none;
   }
-  /* Dégagement pour les barres d'action fixes (Cartes/Constructeur) + safe-area iOS */
+
+  .bottomNav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 80;
+    height: var(--bottomnav-h);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(9, 12, 20, 0.94);
+    border-top: 1px solid var(--border-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Dégagement bas selon la page (barre basse + barre d'action éventuelle). */
   .main {
-    padding: 18px 16px calc(104px + env(safe-area-inset-bottom));
+    padding: 18px 16px calc(var(--bottomnav-h) + 20px);
+  }
+  .main[data-page="cards"] {
+    padding-bottom: calc(var(--bottomnav-h) + 78px);
+  }
+  .main[data-page="builder"] {
+    padding-bottom: calc(var(--bottomnav-h) + 92px);
   }
 }

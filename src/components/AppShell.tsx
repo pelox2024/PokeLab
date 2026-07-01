@@ -18,9 +18,18 @@ const NAV = [
 
 const NAV_HOME = { to: "/", label: "Accueil", icon: "spark" as const };
 
+/** Onglets principaux de la barre basse mobile (les autres via « Plus »). */
+const BOTTOM = [
+  { to: "/cartes", label: fr.nav.cards, icon: "cards" as const },
+  { to: "/builder", label: "Deck", icon: "builder" as const },
+  { to: "/decks", label: "Decks", icon: "decks" as const },
+  { to: "/collection", label: "Collection", icon: "spark" as const },
+];
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
+  const page = pathname === "/builder" ? "builder" : pathname === "/cartes" ? "cards" : "other";
 
   return (
     <div className={styles.shell}>
@@ -88,11 +97,32 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <main className={styles.main}>
+      <main className={styles.main} data-page={page}>
         <div key={pathname} className={styles.pageTransition}>
           {children}
         </div>
       </main>
+
+      {/* Navigation basse (mobile) */}
+      <nav className={styles.bottomNav} aria-label="Navigation principale">
+        {BOTTOM.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === "/"}
+            className={({ isActive }) =>
+              [styles.bottomTab, isActive ? styles.bottomTabActive : ""].filter(Boolean).join(" ")
+            }
+          >
+            <Icon name={item.icon} size={20} />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+        <button type="button" className={styles.bottomTab} onClick={() => setMenuOpen(true)}>
+          <Icon name="menu" size={20} />
+          <span>Plus</span>
+        </button>
+      </nav>
 
       <Toaster />
     </div>
