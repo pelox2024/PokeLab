@@ -7,13 +7,19 @@ import { fetchPokemontcgPricing } from "../api/pokemontcgPricing";
 import { mapLimit } from "../api/deckEnrich";
 import { useDebounce } from "../lib/useDebounce";
 import { setRecencyValue } from "../lib/cardSort";
+import { CardDetailModal } from "../components/CardDetailModal";
 import { Input } from "../components/ui/Input";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Icon } from "../components/ui/Icon";
 import { Logo } from "../components/ui/Logo";
 import styles from "./Collection.module.css";
 
-function CollectionTile({ item }: { item: CollectionItem }) {
+function toProviderId(cardId?: string): string | undefined {
+  if (!cardId || !cardId.startsWith("tcgdex:")) return undefined;
+  return cardId.slice("tcgdex:".length);
+}
+
+function CollectionTile({ item, onInspect }: { item: CollectionItem; onInspect?: (pid: string) => void }) {
   const input = {
     cardId: item.cardId ?? item.id,
     name: item.name,
@@ -21,9 +27,16 @@ function CollectionTile({ item }: { item: CollectionItem }) {
     number: item.number,
     imageUrl: item.imageUrl,
   };
+  const providerId = toProviderId(item.cardId ?? item.id);
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
   return (
     <div className={styles.tile}>
-      <div className={styles.img}>
+      <div
+        className={styles.img}
+        role={onInspect && providerId ? "button" : undefined}
+        onClick={() => providerId && onInspect?.(providerId)}
+        title={item.name}
+      >
         {item.imageUrl ? (
           <img src={item.imageUrl} alt={item.name} loading="lazy" decoding="async" />
         ) : (
@@ -32,7 +45,7 @@ function CollectionTile({ item }: { item: CollectionItem }) {
           </span>
         )}
         <span className={styles.qtyBadge}>×{item.quantity}</span>
-        <div className={styles.bar}>
+        <div className={styles.bar} onClick={stop}>
           <button type="button" onClick={() => adjustOwned(input, -1)} aria-label="Moins">
             <Icon name="minus" size={13} />
           </button>
@@ -44,7 +57,10 @@ function CollectionTile({ item }: { item: CollectionItem }) {
         <button
           type="button"
           className={styles.remove}
-          onClick={() => setOwned(input, 0)}
+          onClick={(e) => {
+            stop(e);
+            setOwned(input, 0);
+          }}
           aria-label="Retirer"
           title="Retirer de la collection"
         >
@@ -65,7 +81,14 @@ export function Collection() {
   const items = useCollection();
   const { data: sets } = useSets();
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<string | null>(null);
   const debounced = useDebounce(search, 250);
+
+  const setLookup = useMemo(() => {
+    const byId = new Map((sets ?? []).map((s) => [s.id, s]));
+    const byCode = new Map((sets ?? []).filter((s) => s.ptcgoCode).map((s) => [s.ptcgoCode!.toUpperCase(), s]));
+    return (code?: string) => (code ? byId.get(code) ?? byCode.get(code.toUpperCase()) : undefined);
+  }, [sets]);
 
   // ---- Valeur estimée (Cardmarket via pokemontcg) ----
   const [value, setValue] = useState<number | null>(null);
@@ -73,14 +96,18 @@ export function Collection() {
   const valKey = useMemo(() => items.map((i) => `${i.id}:${i.quantity}`).join(","), [items]);
   const valFetched = useRef("");
   useEffect(() => {
-    if (items.length === 0 || valFetched.current === valKey) return;
+    if (!sets || items.length === 0 || valFetched.current === valKey) return;
     valFetched.current = valKey;
     let cancelled = false;
     setValState("loading");
     void (async () => {
       let total = 0;
       await mapLimit(items, 5, async (it) => {
-        const p = await fetchPokemontcgPricing({ name: it.name, number: it.number });
+        const p = await fetchPokemontcgPricing({
+          name: it.name,
+          number: it.number,
+          setName: setLookup(it.setCode)?.name,
+        });
         if (cancelled) return;
         total += (p?.trend ?? p?.avg ?? p?.low ?? 0) * it.quantity;
       });
@@ -91,24 +118,21 @@ export function Collection() {
     return () => {
       cancelled = true;
     };
-  }, [items, valKey]);
+  }, [items, valKey, sets, setLookup]);
 
   // ---- Complétion par extension ----
   const completion = useMemo(() => {
     if (!sets) return [] as { set: SetInfo; owned: number }[];
-    const byId = new Map(sets.map((s) => [s.id, s]));
-    const byCode = new Map(sets.filter((s) => s.ptcgoCode).map((s) => [s.ptcgoCode!.toUpperCase(), s]));
-    const lookup = (code?: string) => (code ? byId.get(code) ?? byCode.get(code.toUpperCase()) : undefined);
     const map = new Map<string, { set: SetInfo; owned: number }>();
     for (const it of items) {
-      const set = lookup(it.setCode);
+      const set = setLookup(it.setCode);
       if (!set?.cardCount) continue;
       const e = map.get(set.id) ?? { set, owned: 0 };
       e.owned += 1; // 1 entrée = 1 carte distincte possédée
       map.set(set.id, e);
     }
     return [...map.values()].sort((a, b) => setRecencyValue(b.set) - setRecencyValue(a.set)).slice(0, 12);
-  }, [items, sets]);
+  }, [items, sets, setLookup]);
 
   const filtered = useMemo(() => {
     const q = debounced.trim().toLowerCase();
@@ -201,12 +225,14 @@ export function Collection() {
           ) : (
             <div className={styles.grid}>
               {filtered.map((item) => (
-                <CollectionTile key={item.id} item={item} />
+                <CollectionTile key={item.id} item={item} onInspect={setSelected} />
               ))}
             </div>
           )}
         </>
       )}
+
+      <CardDetailModal providerId={selected} onClose={() => setSelected(null)} onSelectCard={setSelected} />
     </div>
   );
 }

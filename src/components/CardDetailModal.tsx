@@ -347,7 +347,11 @@ function DetailContent({
 
   return (
     <div className={styles.grid}>
-      <FoilImage card={card} />
+      <div className={styles.side}>
+        <FoilImage card={card} />
+        <OwnedControl card={card} />
+        <PriceBlock card={card} cm={resolvedPrice} />
+      </div>
 
       <div className={styles.details}>
         <header className={styles.detailHead}>
@@ -364,8 +368,6 @@ function DetailContent({
             {card.hp != null && <span className={styles.hp}>{card.hp} PV</span>}
           </div>
         </header>
-
-        <OwnedControl card={card} />
 
         {/* Actions rapides */}
         <div className={styles.quickActions}>
@@ -443,9 +445,6 @@ function DetailContent({
             ))}
           </section>
         ) : null}
-
-        {/* Prix */}
-        <PriceBlock card={card} cm={resolvedPrice} />
 
         {/* Légalité */}
         {card.legalities && (

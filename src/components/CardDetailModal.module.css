@@ -5,14 +5,33 @@
 
 .grid {
   display: grid;
-  grid-template-columns: minmax(240px, 330px) 1fr;
-  gap: 32px;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* Rail gauche : image + collection + prix (évite le vide sous l'image) */
+.side {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .side {
+    position: static;
+  }
 }
 
 /* ---- Image ---- */
 .imageWrap {
-  position: sticky;
-  top: 0;
   align-self: start;
 }
 
