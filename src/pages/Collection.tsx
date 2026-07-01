@@ -13,6 +13,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { Icon } from "../components/ui/Icon";
 import { Logo } from "../components/ui/Logo";
 import { AnimatedNumber } from "../components/ui/AnimatedNumber";
+import { ScrollTop } from "../components/ui/ScrollTop";
 import styles from "./Collection.module.css";
 
 function toProviderId(cardId?: string): string | undefined {
@@ -246,6 +247,7 @@ export function Collection() {
       )}
 
       <CardDetailModal providerId={selected} onClose={() => setSelected(null)} onSelectCard={setSelected} />
+      <ScrollTop />
     </div>
   );
 }

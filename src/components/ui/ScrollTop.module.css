@@ -1,0 +1,44 @@
+.btn {
+  position: fixed;
+  right: clamp(16px, 2.5vw, 32px);
+  bottom: clamp(20px, 3vw, 36px);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-glass);
+  background: var(--surface-strong);
+  color: var(--text);
+  box-shadow: var(--shadow-strong);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeInUp 220ms var(--ease-spring);
+  transition: transform var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+}
+
+.btn:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: scale(0.94);
+}
+
+/* Sur mobile, on remonte le bouton au-dessus des barres d'action fixes. */
+@media (max-width: 860px) {
+  .btn {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    animation: none;
+  }
+}

@@ -15,6 +15,7 @@ import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Segmented } from "../components/ui/Segmented";
 import { Icon } from "../components/ui/Icon";
+import { ScrollTop } from "../components/ui/ScrollTop";
 import type { CardFilters, SortKey } from "../api/types";
 import styles from "./Cards.module.css";
 
@@ -138,6 +139,7 @@ export function Cards() {
         onClose={() => setSelected(null)}
         onSelectCard={(id) => setSelected(id)}
       />
+      <ScrollTop />
     </div>
   );
 }
