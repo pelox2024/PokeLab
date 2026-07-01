@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DeckCard } from "../db/schema";
 import type { SetInfo } from "../api/types";
 import { buildDecklistText } from "../lib/deckExport";
+import { fetchPokemontcgPricing } from "../api/pokemontcgPricing";
+import { mapLimit } from "../api/deckEnrich";
 import { useOwnedMap } from "../db/collection";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
@@ -50,6 +52,44 @@ export function ExportModal({ open, onClose, cards, sets, deckName }: Props) {
     [missing],
   );
   const missingTotal = missing.reduce((n, m) => n + m.need, 0);
+
+  // ---- Prix estimés (Cardmarket via pokemontcg) ----
+  const [prices, setPrices] = useState<Map<string, number | null>>(new Map());
+  const [priceUrls, setPriceUrls] = useState<Map<string, string>>(new Map());
+  const [priceState, setPriceState] = useState<"idle" | "loading" | "done">("idle");
+  const missingKey = useMemo(() => missing.map((m) => m.card.id).join(","), [missing]);
+  const fetchedRef = useRef("");
+
+  useEffect(() => {
+    if (!open || tab !== "missing" || missing.length === 0) return;
+    if (fetchedRef.current === missingKey) return;
+    fetchedRef.current = missingKey;
+    let cancelled = false;
+    setPriceState("loading");
+    void (async () => {
+      const pm = new Map<string, number | null>();
+      const um = new Map<string, string>();
+      await mapLimit(missing, 5, async ({ card }) => {
+        const p = await fetchPokemontcgPricing({ name: card.name, number: card.number });
+        if (cancelled) return;
+        pm.set(card.id, p?.trend ?? p?.avg ?? p?.low ?? null);
+        if (p?.sourceUrl) um.set(card.id, p.sourceUrl);
+      });
+      if (cancelled) return;
+      setPrices(pm);
+      setPriceUrls(um);
+      setPriceState("done");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, tab, missingKey, missing]);
+
+  const estimatedTotal = useMemo(
+    () => missing.reduce((s, { card, need }) => s + (prices.get(card.id) ?? 0) * need, 0),
+    [missing, prices],
+  );
+  const fmtEur = (v: number) => `${v.toFixed(2)} €`;
 
   const copy = async (text: string, which: "list" | "missing") => {
     try {
@@ -128,15 +168,33 @@ export function ExportModal({ open, onClose, cards, sets, deckName }: Props) {
             ) : (
               <>
                 <div className={styles.missingList}>
-                  {missing.map(({ card, need }) => (
-                    <div key={card.id} className={styles.missingRow}>
-                      <span className={styles.missingNeed}>{need}×</span>
-                      <span className={styles.missingName}>{card.name}</span>
-                      <a className={styles.cmLink} href={cmLink(card.name)} target="_blank" rel="noopener noreferrer">
-                        <Icon name="search" size={13} /> Cardmarket
-                      </a>
-                    </div>
-                  ))}
+                  {missing.map(({ card, need }) => {
+                    const unit = prices.get(card.id);
+                    return (
+                      <div key={card.id} className={styles.missingRow}>
+                        <span className={styles.missingNeed}>{need}×</span>
+                        <span className={styles.missingName}>{card.name}</span>
+                        {priceState === "done" && (
+                          <span className={styles.missingPrice}>
+                            {unit != null ? fmtEur(unit * need) : "—"}
+                          </span>
+                        )}
+                        <a className={styles.cmLink} href={priceUrls.get(card.id) ?? cmLink(card.name)} target="_blank" rel="noopener noreferrer">
+                          <Icon name="search" size={13} /> Cardmarket
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className={styles.missingSummary}>
+                  <span>
+                    {priceState === "loading"
+                      ? "Estimation des prix…"
+                      : priceState === "done"
+                        ? "Total estimé (tendance Cardmarket)"
+                        : ""}
+                  </span>
+                  {priceState === "done" && <span className={styles.missingTotalVal}>≈ {fmtEur(estimatedTotal)}</span>}
                 </div>
                 <div className={styles.actions}>
                   <Button variant="primary" onClick={() => copy(missingText, "missing")} iconLeft={<Icon name={copied === "missing" ? "spark" : "cards"} size={16} />}>
