@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSets } from "../hooks/useCards";
 import { useCardExplorer } from "../hooks/useCardExplorer";
@@ -35,9 +35,18 @@ export function Cards() {
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
   const owned = useOwnedMap();
+  const ownedIds = useMemo(() => new Set(owned.keys()), [owned]);
+
+  // On retire ownedOnly des filtres API (filtre client) pour éviter tout refetch.
+  const apiFilters = useMemo(() => {
+    if (!filters.ownedOnly) return filters;
+    const copy = { ...filters };
+    delete copy.ownedOnly;
+    return copy;
+  }, [filters]);
 
   const { binderMode, sections, flatCards, count, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
-    useCardExplorer(debounced, filters, sort, sets, { excludePocket: true });
+    useCardExplorer(debounced, apiFilters, sort, sets, { excludePocket: true, ownedOnly: filters.ownedOnly, ownedIds });
 
   const loading = isLoading;
   const showResults = !loading && !isError && count > 0;

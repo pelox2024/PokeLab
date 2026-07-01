@@ -7,6 +7,10 @@ import type { CardSection } from "../components/CardGrid";
 interface Options {
   /** Exclure Pokémon TCG Pocket par défaut (sauf set explicite / includePocket). */
   excludePocket?: boolean;
+  /** N'afficher que les cartes possédées (filtre client via ownedIds). */
+  ownedOnly?: boolean;
+  /** Ids globaux des cartes possédées, pour le filtre "possédées uniquement". */
+  ownedIds?: Set<string>;
 }
 
 export interface CardExplorer {
@@ -78,14 +82,31 @@ export function useCardExplorer(
       }));
   }, [binderMode, browse.data]);
 
+  // Filtre "possédées uniquement" (client) : on garde les cartes en collection.
+  const ownedOnly = !!options?.ownedOnly;
+  const ownedIds = options?.ownedIds;
+  const shownFlat = useMemo(
+    () => (ownedOnly ? flatCards.filter((c) => ownedIds?.has(c.id)) : flatCards),
+    [flatCards, ownedOnly, ownedIds],
+  );
+  const shownSections = useMemo(
+    () =>
+      ownedOnly
+        ? sections
+            .map((s) => ({ ...s, cards: s.cards.filter((c) => ownedIds?.has(c.id)) }))
+            .filter((s) => s.cards.length > 0)
+        : sections,
+    [sections, ownedOnly, ownedIds],
+  );
+
   const count = binderMode
-    ? sections.reduce((s, sec) => s + sec.cards.length, 0)
-    : flatCards.length;
+    ? shownSections.reduce((s, sec) => s + sec.cards.length, 0)
+    : shownFlat.length;
 
   return {
     binderMode,
-    sections,
-    flatCards,
+    sections: shownSections,
+    flatCards: shownFlat,
     count,
     isLoading: q.isLoading || (binderMode && !sets),
     isError: q.isError,

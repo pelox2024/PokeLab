@@ -77,10 +77,17 @@ export function Builder() {
 
   const debounced = useDebounce(search, 350);
   const { data: sets } = useSets();
-  const { binderMode, sections, flatCards, count, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useCardExplorer(debounced, filters, sort, sets, { excludePocket: true });
-
   const owned = useOwnedMap();
+  const ownedIds = useMemo(() => new Set(owned.keys()), [owned]);
+  const apiFilters = useMemo(() => {
+    if (!filters.ownedOnly) return filters;
+    const copy = { ...filters };
+    delete copy.ownedOnly;
+    return copy;
+  }, [filters]);
+  const { binderMode, sections, flatCards, count, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useCardExplorer(debounced, apiFilters, sort, sets, { excludePocket: true, ownedOnly: filters.ownedOnly, ownedIds });
+
   const qtyByCard = useMemo(() => {
     const m = new Map<string, number>();
     for (const c of cards) m.set(c.cardId ?? c.id, c.quantity);
