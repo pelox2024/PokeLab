@@ -1,7 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { adjustOwned, setOwned, useCollection } from "../db/collection";
 import type { CollectionItem } from "../db/schema";
+import type { SetInfo } from "../api/types";
+import { useSets } from "../hooks/useCards";
+import { fetchPokemontcgPricing } from "../api/pokemontcgPricing";
+import { mapLimit } from "../api/deckEnrich";
 import { useDebounce } from "../lib/useDebounce";
+import { setRecencyValue } from "../lib/cardSort";
 import { Input } from "../components/ui/Input";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Icon } from "../components/ui/Icon";
@@ -58,8 +63,52 @@ function CollectionTile({ item }: { item: CollectionItem }) {
 
 export function Collection() {
   const items = useCollection();
+  const { data: sets } = useSets();
   const [search, setSearch] = useState("");
   const debounced = useDebounce(search, 250);
+
+  // ---- Valeur estimée (Cardmarket via pokemontcg) ----
+  const [value, setValue] = useState<number | null>(null);
+  const [valState, setValState] = useState<"idle" | "loading" | "done">("idle");
+  const valKey = useMemo(() => items.map((i) => `${i.id}:${i.quantity}`).join(","), [items]);
+  const valFetched = useRef("");
+  useEffect(() => {
+    if (items.length === 0 || valFetched.current === valKey) return;
+    valFetched.current = valKey;
+    let cancelled = false;
+    setValState("loading");
+    void (async () => {
+      let total = 0;
+      await mapLimit(items, 5, async (it) => {
+        const p = await fetchPokemontcgPricing({ name: it.name, number: it.number });
+        if (cancelled) return;
+        total += (p?.trend ?? p?.avg ?? p?.low ?? 0) * it.quantity;
+      });
+      if (cancelled) return;
+      setValue(total);
+      setValState("done");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [items, valKey]);
+
+  // ---- Complétion par extension ----
+  const completion = useMemo(() => {
+    if (!sets) return [] as { set: SetInfo; owned: number }[];
+    const byId = new Map(sets.map((s) => [s.id, s]));
+    const byCode = new Map(sets.filter((s) => s.ptcgoCode).map((s) => [s.ptcgoCode!.toUpperCase(), s]));
+    const lookup = (code?: string) => (code ? byId.get(code) ?? byCode.get(code.toUpperCase()) : undefined);
+    const map = new Map<string, { set: SetInfo; owned: number }>();
+    for (const it of items) {
+      const set = lookup(it.setCode);
+      if (!set?.cardCount) continue;
+      const e = map.get(set.id) ?? { set, owned: 0 };
+      e.owned += 1; // 1 entrée = 1 carte distincte possédée
+      map.set(set.id, e);
+    }
+    return [...map.values()].sort((a, b) => setRecencyValue(b.set) - setRecencyValue(a.set)).slice(0, 12);
+  }, [items, sets]);
 
   const filtered = useMemo(() => {
     const q = debounced.trim().toLowerCase();
@@ -71,7 +120,7 @@ export function Collection() {
 
   const totalCards = items.reduce((n, i) => n + i.quantity, 0);
   const distinct = items.length;
-  const sets = new Set(items.map((i) => i.setCode).filter(Boolean)).size;
+  const setCount = new Set(items.map((i) => i.setCode).filter(Boolean)).size;
 
   return (
     <div className={styles.page}>
@@ -96,10 +145,40 @@ export function Collection() {
             <span className={styles.statLabel}>cartes distinctes</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statNum}>{sets}</span>
+            <span className={styles.statNum}>{setCount}</span>
             <span className={styles.statLabel}>extensions</span>
           </div>
+          <div className={styles.stat}>
+            <span className={styles.statNum}>
+              {valState === "done" && value != null ? `${Math.round(value)} €` : valState === "loading" ? "…" : "—"}
+            </span>
+            <span className={styles.statLabel}>valeur estimée</span>
+          </div>
         </div>
+      )}
+
+      {completion.length > 0 && (
+        <section className={styles.completion}>
+          <span className={styles.sectionTitle}>Complétion par extension</span>
+          <div className={styles.compGrid}>
+            {completion.map(({ set, owned }) => {
+              const pct = Math.min(100, Math.round((owned / (set.cardCount || 1)) * 100));
+              return (
+                <div key={set.id} className={styles.compRow}>
+                  <div className={styles.compHead}>
+                    <span className={styles.compName}>{set.name}</span>
+                    <span className={styles.compVal}>
+                      {owned}/{set.cardCount} · {pct}%
+                    </span>
+                  </div>
+                  <div className={styles.compBar}>
+                    <span className={styles.compFill} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {items.length === 0 ? (
