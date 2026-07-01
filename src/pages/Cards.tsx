@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useSets } from "../hooks/useCards";
 import { useCardExplorer } from "../hooks/useCardExplorer";
-import { useOwnedMap } from "../db/collection";
+import { adjustOwned, useOwnedMap } from "../db/collection";
+import { parseCardId } from "../lib/cardSort";
 import { useDebounce } from "../lib/useDebounce";
 import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
@@ -120,6 +121,12 @@ export function Cards() {
           size={size}
           rarityHint={filters.rarities}
           getOwned={(c) => owned.get(c.id) ?? 0}
+          onOwnAdjust={(c, delta) =>
+            adjustOwned(
+              { cardId: c.id, name: c.name, setCode: parseCardId(c.providerId).setId, number: c.localId },
+              delta,
+            )
+          }
           onCardClick={(c) => setSelected(c.providerId)}
           loadingMore={isFetchingNextPage || (count === 0 && hasNextPage)}
           onReachEnd={fetchNextPage}

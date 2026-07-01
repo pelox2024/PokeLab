@@ -18,9 +18,11 @@ interface CardTileProps {
   inDeckQty?: number;
   /** Quantité possédée en collection (badge). */
   owned?: number;
+  /** Active le stepper « possédé » au survol (page Cartes). */
+  onOwnAdjust?: (card: CardBrief, delta: number) => void;
 }
 
-export function CardTile({ card, onClick, rarityHint, inDeckQty, owned }: CardTileProps) {
+export function CardTile({ card, onClick, rarityHint, inDeckQty, owned, onOwnAdjust }: CardTileProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const queryClient = useQueryClient();
@@ -58,9 +60,21 @@ export function CardTile({ card, onClick, rarityHint, inDeckQty, owned }: CardTi
   } as CSSProperties;
 
   const alias = card.searchAliases?.[0];
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   return (
-    <button type="button" className={styles.tile} onClick={() => onClick?.(card)}>
+    <div
+      className={styles.tile}
+      role="button"
+      tabIndex={0}
+      onClick={() => onClick?.(card)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.(card);
+        }
+      }}
+    >
       <div className={styles.perspective}>
         <div
           ref={ref}
@@ -107,6 +121,29 @@ export function CardTile({ card, onClick, rarityHint, inDeckQty, owned }: CardTi
               {owned}
             </span>
           )}
+
+          {onOwnAdjust && (
+            <div className={styles.ownBar} onClick={stop}>
+              <button
+                type="button"
+                className={styles.ownBtn}
+                onClick={() => onOwnAdjust(card, -1)}
+                disabled={(owned ?? 0) <= 0}
+                aria-label="Retirer de ma collection"
+              >
+                <Icon name="minus" size={13} />
+              </button>
+              <span className={styles.ownVal}>{owned ?? 0}</span>
+              <button
+                type="button"
+                className={styles.ownBtn}
+                onClick={() => onOwnAdjust(card, 1)}
+                aria-label="Ajouter à ma collection"
+              >
+                <Icon name="plus" size={13} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -115,6 +152,6 @@ export function CardTile({ card, onClick, rarityHint, inDeckQty, owned }: CardTi
         {card.localId && <span className={styles.num}>#{card.localId}</span>}
       </div>
       {alias && <span className={styles.alias}>{alias}</span>}
-    </button>
+    </div>
   );
 }
