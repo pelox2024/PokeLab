@@ -5,6 +5,7 @@ import { buildDecklistText } from "../lib/deckExport";
 import { fetchPokemontcgPricing } from "../api/pokemontcgPricing";
 import { mapLimit } from "../api/deckEnrich";
 import { useOwnedMap } from "../db/collection";
+import { toast } from "../store/toastStore";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Icon } from "./ui/Icon";
@@ -95,6 +96,7 @@ export function ExportModal({ open, onClose, cards, sets, deckName }: Props) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(which);
+      toast(which === "missing" ? "Manquantes copiées" : "Decklist copiée", "success");
       setTimeout(() => setCopied(null), 1800);
     } catch {
       /* clipboard indisponible */

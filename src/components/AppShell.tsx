@@ -4,6 +4,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { fr } from "../lib/i18n";
 import { Icon } from "./ui/Icon";
 import { Logo } from "./ui/Logo";
+import { Toaster } from "./ui/Toaster";
 import styles from "./AppShell.module.css";
 
 const NAV = [
@@ -92,6 +93,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+
+      <Toaster />
     </div>
   );
 }

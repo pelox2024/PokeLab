@@ -6,7 +6,9 @@ import type { CardBrief, CardFilters, CardRecord, SortKey } from "../api/types";
 import type { DeckFormat } from "../db/schema";
 import { useSets } from "../hooks/useCards";
 import { useCardExplorer } from "../hooks/useCardExplorer";
+import { useOwnedMap } from "../db/collection";
 import { fetchEnrichment, mapLimit, needsEnrichment } from "../api/deckEnrich";
+import { toast } from "../store/toastStore";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useDebounce } from "../lib/useDebounce";
 import { createDeck, persistDeck } from "../db/decks";
@@ -78,6 +80,7 @@ export function Builder() {
   const { binderMode, sections, flatCards, count, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useCardExplorer(debounced, filters, sort, sets, { excludePocket: true });
 
+  const owned = useOwnedMap();
   const qtyByCard = useMemo(() => {
     const m = new Map<string, number>();
     for (const c of cards) m.set(c.cardId ?? c.id, c.quantity);
@@ -120,6 +123,7 @@ export function Builder() {
 
   const addToDeck = async (brief: CardBrief) => {
     add({ cardId: brief.id, name: brief.name, number: brief.localId, imageUrl: brief.imageUrl });
+    toast(`Ajouté : ${brief.name}`, "success");
     try {
       const rec = await queryClient.fetchQuery<CardRecord>({
         queryKey: ["cards", "detail", brief.providerId],
@@ -196,6 +200,7 @@ export function Builder() {
           size="compact"
           rarityHint={filters.rarities}
           getQty={(c) => qtyByCard.get(c.id) ?? 0}
+          getOwned={(c) => owned.get(c.id) ?? 0}
           onCardClick={addToDeck}
           loadingMore={isFetchingNextPage || (count === 0 && hasNextPage)}
           onReachEnd={fetchNextPage}
