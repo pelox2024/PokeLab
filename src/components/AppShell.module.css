@@ -184,20 +184,20 @@
   padding: 28px clamp(18px, 2.5vw, 48px) 80px;
 }
 
-/* Transition de page (entrée douce à chaque changement de route) */
+/* Transition de page (entrée douce à chaque changement de route).
+   Fondu SEUL : pas de transform/will-change, sinon ce conteneur deviendrait le
+   bloc contenant des éléments position:fixed enfants (barre d'action mobile) et
+   les décrocherait du viewport. */
 .pageTransition {
-  animation: pageEnter var(--t-slow);
-  will-change: transform, opacity;
+  animation: pageFade var(--t-slow);
 }
 
-@keyframes pageEnter {
+@keyframes pageFade {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -220,7 +220,8 @@
   .burger {
     display: inline-flex;
   }
+  /* Dégagement pour les barres d'action fixes (Cartes/Constructeur) + safe-area iOS */
   .main {
-    padding: 18px 16px 120px;
+    padding: 18px 16px calc(104px + env(safe-area-inset-bottom));
   }
 }
