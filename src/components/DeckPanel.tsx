@@ -7,6 +7,7 @@ import type { SetInfo } from "../api/types";
 import { fr } from "../lib/i18n";
 import { Icon } from "./ui/Icon";
 import { Select } from "./ui/Select";
+import { AnimatedNumber } from "./ui/AnimatedNumber";
 import { DeckStats } from "./DeckStats";
 import styles from "./DeckPanel.module.css";
 
@@ -239,7 +240,9 @@ export function DeckPanel({
           </div>
         )}
         <div className={styles.totalRow}>
-          <span className={[styles.total, complete ? styles.totalOk : ""].join(" ")}>{stats.total}</span>
+          <span className={[styles.total, complete ? styles.totalOk : ""].join(" ")}>
+            <AnimatedNumber value={stats.total} />
+          </span>
           <span className={styles.totalMax}>/ 60</span>
           <span className={styles.miniStats}>
             <span title={fr.category.pokemon}>{stats.pokemon} P</span>

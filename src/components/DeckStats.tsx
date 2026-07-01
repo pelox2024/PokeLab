@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { DeckStats as Stats } from "../lib/deckStats";
 import { typeLabel } from "../lib/filters";
 import { TypeIcon } from "./ui/TypeIcon";
+import { AnimatedNumber } from "./ui/AnimatedNumber";
 import styles from "./DeckStats.module.css";
 
 interface Seg {
@@ -11,7 +12,7 @@ interface Seg {
 }
 
 /** Anneau de composition (SVG, segments proportionnels). */
-function Donut({ segments, center, sub }: { segments: Seg[]; center: string; sub?: string }) {
+function Donut({ segments, center, sub }: { segments: Seg[]; center: ReactNode; sub?: string }) {
   const total = segments.reduce((s, x) => s + x.value, 0) || 1;
   const R = 15.915; // circonférence ≈ 100
   // Pré-calcul des arcs (longueur + décalage cumulé) sans mutation au rendu.
@@ -159,7 +160,7 @@ export function DeckStats({ stats }: { stats: Stats }) {
     <div className={styles.wrap}>
       <Card title="Composition">
         <div className={styles.compRow}>
-          <Donut segments={compSegments} center={String(stats.total)} sub="cartes" />
+          <Donut segments={compSegments} center={<AnimatedNumber value={stats.total} />} sub="cartes" />
           <Legend segments={compSegments} />
         </div>
       </Card>
@@ -168,7 +169,7 @@ export function DeckStats({ stats }: { stats: Stats }) {
         <Card title="Risque de mulligan" hint={`${stats.basicCount} Pokémon de base`}>
           <div className={styles.metricRow}>
             <span className={styles.metricBig} style={{ color: mt.color }}>
-              {stats.mulliganPct}
+              <AnimatedNumber value={stats.mulliganPct ?? 0} format={(n) => n.toFixed(1)} />
               <span className={styles.metricUnit}>%</span>
             </span>
             <span className={styles.metricWord} style={{ color: mt.color }}>

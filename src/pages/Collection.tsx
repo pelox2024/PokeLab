@@ -12,6 +12,7 @@ import { Input } from "../components/ui/Input";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Icon } from "../components/ui/Icon";
 import { Logo } from "../components/ui/Logo";
+import { AnimatedNumber } from "../components/ui/AnimatedNumber";
 import styles from "./Collection.module.css";
 
 function toProviderId(cardId?: string): string | undefined {
@@ -161,20 +162,32 @@ export function Collection() {
       {items.length > 0 && (
         <div className={styles.stats}>
           <div className={styles.stat}>
-            <span className={styles.statNum}>{totalCards}</span>
+            <span className={styles.statNum}>
+              <AnimatedNumber value={totalCards} />
+            </span>
             <span className={styles.statLabel}>cartes au total</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statNum}>{distinct}</span>
+            <span className={styles.statNum}>
+              <AnimatedNumber value={distinct} />
+            </span>
             <span className={styles.statLabel}>cartes distinctes</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statNum}>{setCount}</span>
+            <span className={styles.statNum}>
+              <AnimatedNumber value={setCount} />
+            </span>
             <span className={styles.statLabel}>extensions</span>
           </div>
           <div className={styles.stat}>
             <span className={styles.statNum}>
-              {valState === "done" && value != null ? `${Math.round(value)} €` : valState === "loading" ? "…" : "—"}
+              {valState === "done" && value != null ? (
+                <AnimatedNumber value={value} format={(n) => `${Math.round(n)} €`} />
+              ) : valState === "loading" ? (
+                "…"
+              ) : (
+                "—"
+              )}
             </span>
             <span className={styles.statLabel}>valeur estimée</span>
           </div>
