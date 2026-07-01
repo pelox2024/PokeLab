@@ -15,9 +15,23 @@ type IconName =
   | "spark"
   | "close"
   | "menu"
-  | "filter";
+  | "filter"
+  | "home"
+  | "collection";
 
 const paths: Record<IconName, ReactElement> = {
+  home: (
+    <>
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5 9.5V21h14V9.5" />
+    </>
+  ),
+  collection: (
+    <>
+      <path d="M12 3 3 8l9 5 9-5-9-5Z" />
+      <path d="M3 12l9 5 9-5" />
+    </>
+  ),
   search: (
     <>
       <circle cx="11" cy="11" r="7" />

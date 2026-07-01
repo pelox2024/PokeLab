@@ -11,6 +11,23 @@
   flex-wrap: wrap;
 }
 
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color var(--t-fast), background var(--t-fast);
+}
+
+.backLink:hover {
+  color: var(--text);
+  background: var(--surface-glass);
+}
+
 .nameInput {
   flex: 1;
   min-width: 200px;

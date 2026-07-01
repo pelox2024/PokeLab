@@ -7,24 +7,29 @@ import { Logo } from "./ui/Logo";
 import { Toaster } from "./ui/Toaster";
 import styles from "./AppShell.module.css";
 
+// Le Constructeur (/builder) n'est pas une destination à part : c'est l'éditeur
+// ouvert depuis « Decks ». On regroupe pour éviter la confusion « Deck / Decks ».
 const NAV = [
   { to: "/cartes", label: fr.nav.cards, icon: "cards" as const },
-  { to: "/builder", label: fr.nav.builder, icon: "builder" as const },
-  { to: "/decks", label: fr.nav.myDecks, icon: "decks" as const },
-  { to: "/collection", label: "Collection", icon: "spark" as const },
+  { to: "/decks", label: "Decks", icon: "decks" as const },
+  { to: "/collection", label: "Collection", icon: "collection" as const },
   { to: "/analyse", label: fr.nav.analysis, icon: "chart" as const },
   { to: "/reglages", label: fr.nav.settings, icon: "settings" as const },
 ];
 
-const NAV_HOME = { to: "/", label: "Accueil", icon: "spark" as const };
+const NAV_HOME = { to: "/", label: "Accueil", icon: "home" as const };
 
-/** Onglets principaux de la barre basse mobile (les autres via « Plus »). */
+/** Onglets principaux de la barre basse mobile (Analyse/Réglages via « Plus »). */
 const BOTTOM = [
+  { to: "/", label: "Accueil", icon: "home" as const, end: true },
   { to: "/cartes", label: fr.nav.cards, icon: "cards" as const },
-  { to: "/builder", label: "Deck", icon: "builder" as const },
   { to: "/decks", label: "Decks", icon: "decks" as const },
-  { to: "/collection", label: "Collection", icon: "spark" as const },
+  { to: "/collection", label: "Collection", icon: "collection" as const },
 ];
+
+/** « Decks » reste actif pendant l'édition d'un deck (/builder). */
+const isSectionActive = (to: string, pathname: string, isActive: boolean) =>
+  isActive || (to === "/decks" && pathname.startsWith("/builder"));
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -51,7 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  [styles.link, isActive ? styles.linkActive : ""].filter(Boolean).join(" ")
+                  [styles.link, isSectionActive(item.to, pathname, isActive) ? styles.linkActive : ""].filter(Boolean).join(" ")
                 }
               >
                 <Icon name={item.icon} size={17} />
@@ -86,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 end={item.to === "/"}
                 onClick={() => setMenuOpen(false)}
                 className={({ isActive }) =>
-                  [styles.menuLink, isActive ? styles.menuLinkActive : ""].filter(Boolean).join(" ")
+                  [styles.menuLink, isSectionActive(item.to, pathname, isActive) ? styles.menuLinkActive : ""].filter(Boolean).join(" ")
                 }
               >
                 <Icon name={item.icon} size={20} />
@@ -109,9 +114,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === "/"}
+            end={item.end}
             className={({ isActive }) =>
-              [styles.bottomTab, isActive ? styles.bottomTabActive : ""].filter(Boolean).join(" ")
+              [styles.bottomTab, isSectionActive(item.to, pathname, isActive) ? styles.bottomTabActive : ""].filter(Boolean).join(" ")
             }
           >
             <Icon name={item.icon} size={20} />

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { activeProvider } from "../api/cardApi";
 import type { CardBrief, CardFilters, CardRecord, SortKey } from "../api/types";
@@ -218,6 +219,9 @@ export function Builder() {
 
   const deckHeader = (
     <header className={styles.deckHeader}>
+      <Link to="/decks" className={styles.backLink}>
+        <span aria-hidden="true">←</span> Mes decks
+      </Link>
       <Input className={styles.nameInput} value={name} onChange={(e) => setName(e.target.value)} aria-label={fr.builder.deckName} />
       <Select options={FORMAT_OPTIONS} value={format} onChange={(e) => setFormat(e.target.value as DeckFormat)} aria-label={fr.builder.format} />
       <Button variant="ghost" size="md" onClick={newDeck} iconLeft={<Icon name="plus" size={16} />}>

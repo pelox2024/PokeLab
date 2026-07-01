@@ -69,9 +69,9 @@ export function Home() {
                 <Icon name="cards" size={18} />
                 Explorer les cartes
               </Link>
-              <Link to="/builder" className={styles.ctaGhost}>
-                <Icon name="builder" size={18} />
-                Constructeur
+              <Link to="/decks" className={styles.ctaGhost}>
+                <Icon name="decks" size={18} />
+                Mes decks
               </Link>
             </div>
           </div>
