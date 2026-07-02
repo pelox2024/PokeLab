@@ -58,23 +58,6 @@ function ComingSoon({ kicker, title, subtitle, panelTitle, features }: ComingSoo
   );
 }
 
-export function Analysis() {
-  return (
-    <ComingSoon
-      kicker={fr.nav.analysis}
-      title="Analyse de tes decks"
-      subtitle="Une vue d'ensemble de tous tes decks et des contrôles de cohérence, au-delà des statistiques déjà présentes dans le Constructeur."
-      panelTitle="Ce qui arrive ici"
-      features={[
-        { icon: "chart", title: "Statistiques agrégées", sub: "Répartition, courbes et moyennes sur l'ensemble de tes decks." },
-        { icon: "alert", title: "Contrôles de cohérence", sub: "Lignes d'évolution incomplètes, ratios Énergie, max 4 exemplaires." },
-        { icon: "decks", title: "Comparaison de decks", sub: "Mettre deux decks côte à côte (composition, prix, mulligan)." },
-        { icon: "spark", title: "Tendances méta", sub: "Archétypes et cartes populaires (évolution future via Limitless)." },
-      ]}
-    />
-  );
-}
-
 export function Settings() {
   return (
     <ComingSoon

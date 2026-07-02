@@ -5,7 +5,8 @@ import { Cards } from "./pages/Cards";
 import { Builder } from "./pages/Builder";
 import { MyDecks } from "./pages/MyDecks";
 import { Collection } from "./pages/Collection";
-import { Analysis, Settings } from "./pages/Placeholder";
+import { Analysis } from "./pages/Analysis";
+import { Settings } from "./pages/Placeholder";
 
 export default function App() {
   return (
