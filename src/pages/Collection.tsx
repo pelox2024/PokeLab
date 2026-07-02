@@ -16,9 +16,9 @@ import { AnimatedNumber } from "../components/ui/AnimatedNumber";
 import { ScrollTop } from "../components/ui/ScrollTop";
 import styles from "./Collection.module.css";
 
+/** Id global (préfixé provider) pour ouvrir la modal détail ; null si absent. */
 function toProviderId(cardId?: string): string | undefined {
-  if (!cardId || !cardId.startsWith("tcgdex:")) return undefined;
-  return cardId.slice("tcgdex:".length);
+  return cardId || undefined;
 }
 
 function CollectionTile({ item, onInspect }: { item: CollectionItem; onInspect?: (pid: string) => void }) {

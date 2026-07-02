@@ -19,7 +19,7 @@ export const fr = {
   cards: {
     title: "Cartes",
     subtitle: "Explorez toutes les cartes Pokémon TCG",
-    searchPlaceholder: "Rechercher une carte (FR ou EN)…",
+    searchPlaceholder: "Rechercher un nom ou un effet (ex. « put damage »)…",
     shown: (n: number) => `${n.toLocaleString("fr-FR")} cartes affichées`,
     scrollMore: "Faites défiler pour charger plus de cartes",
     sort: "Trier",

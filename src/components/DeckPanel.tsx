@@ -26,9 +26,9 @@ const SORT_OPTIONS: { value: DeckSortKey; label: string }[] = [
 
 /** providerId TCGdex ("sv08-001") depuis l'id global. `undefined` pour les
  *  cartes non-TCGdex (importées/manuelles) → pas de détail (évite l'erreur). */
+/** Id global (préfixé provider) pour ouvrir la modal détail ; undefined si absent. */
 function toProviderId(cardId?: string): string | undefined {
-  if (!cardId || !cardId.startsWith("tcgdex:")) return undefined;
-  return cardId.slice("tcgdex:".length);
+  return cardId || undefined;
 }
 
 const KNOWN_TYPES = new Set([

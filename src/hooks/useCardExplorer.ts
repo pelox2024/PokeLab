@@ -62,13 +62,16 @@ export function useCardExplorer(
   const flat = useCardSearch(debounced, filters, sort, !binderMode);
   const q = binderMode ? browse : flat;
 
+  // Recherche textuelle : résultats déjà classés par pertinence côté serveur —
+  // on préserve cet ordre (le tri client par set/nom ne s'applique qu'en navigation).
+  const isTextSearch = !!debounced.trim();
   const flatCards: CardBrief[] = useMemo(() => {
     if (binderMode) return [];
     let items = flat.data?.pages.flatMap((p) => p.items) ?? [];
     if (excludePocket) items = items.filter((c) => !isPocket(c.providerId));
-    return sortCards(items, sort, setRank);
+    return isTextSearch ? items : sortCards(items, sort, setRank);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [binderMode, flat.data, sort, setRank, excludePocket, pocketSetIds]);
+  }, [binderMode, flat.data, sort, setRank, excludePocket, pocketSetIds, isTextSearch]);
 
   const sections: CardSection[] = useMemo(() => {
     if (!binderMode) return [];

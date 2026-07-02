@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { activeProvider } from "../api/cardApi";
+import { getPtcgCard, searchCardsFullText } from "../api/ptcgProvider";
 import { fetchPokemontcgPricing } from "../api/pokemontcgPricing";
 import { fetchPokemontcgSetMeta } from "../api/pokemontcgSets";
 import { numberKey, parseCardId } from "../lib/cardSort";
@@ -12,17 +13,16 @@ const PAGE_SIZE = 40;
  * La requête est conservée en cache par TanStack Query.
  */
 export function useCardSearch(search: string, filters: CardFilters, sort: SortKey, enabled = true) {
+  // Recherche textuelle (nom OU texte des attaques/talents/règles) : index
+  // Supabase (pokemontcg). Sans terme, navigation classique TCGdex par nom.
+  const isTextSearch = !!search.trim();
   return useInfiniteQuery<CardPage>({
-    queryKey: ["cards", "search", search, filters, sort],
+    queryKey: ["cards", "search", isTextSearch ? "ft" : "tcgdex", search, filters, sort],
     enabled,
-    queryFn: ({ pageParam }) =>
-      activeProvider.searchCards({
-        search,
-        filters,
-        sort,
-        page: pageParam as number,
-        pageSize: PAGE_SIZE,
-      }),
+    queryFn: ({ pageParam }) => {
+      const q = { search, filters, sort, page: pageParam as number, pageSize: PAGE_SIZE };
+      return isTextSearch ? searchCardsFullText(q) : activeProvider.searchCards(q);
+    },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     staleTime: 5 * 60 * 1000,
@@ -79,12 +79,21 @@ export function useCardBrowse(
   });
 }
 
-/** Détail d'une carte (chargé à l'ouverture du modal — lazy, bilingue). */
-export function useCardDetail(providerId: string | null) {
+/**
+ * Détail d'une carte (lazy, à l'ouverture de la modal). Accepte un id global
+ * préfixé (`ptcg:` / `tcgdex:`) ou un id TCGdex nu (rétro-compat) et route vers
+ * le bon provider — TCGdex (bilingue) ou pokemontcg pour les cartes `ptcg:`.
+ */
+export function useCardDetail(id: string | null) {
   return useQuery({
-    queryKey: ["cards", "detail", providerId],
-    queryFn: () => activeProvider.getCard(providerId as string),
-    enabled: !!providerId,
+    queryKey: ["cards", "detail", id],
+    queryFn: () => {
+      const key = id as string;
+      if (key.startsWith("ptcg:")) return getPtcgCard(key.slice("ptcg:".length));
+      const pid = key.startsWith("tcgdex:") ? key.slice("tcgdex:".length) : key;
+      return activeProvider.getCard(pid);
+    },
+    enabled: !!id,
     staleTime: 30 * 60 * 1000,
   });
 }

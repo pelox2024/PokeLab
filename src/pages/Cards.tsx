@@ -137,7 +137,7 @@ export function Cards() {
               delta,
             )
           }
-          onCardClick={(c) => setSelected(c.providerId)}
+          onCardClick={(c) => setSelected(c.id)}
           loadingMore={isFetchingNextPage || (count === 0 && hasNextPage)}
           onReachEnd={fetchNextPage}
         />
