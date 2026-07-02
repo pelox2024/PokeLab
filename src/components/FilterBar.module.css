@@ -32,6 +32,34 @@
   gap: 18px;
 }
 
+/* Accès rapide aux rôles : bande à défilement horizontal (fonctionnalité phare) */
+.rolesQuick {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rolesQuick::-webkit-scrollbar {
+  display: none;
+}
+
+.rolesQuick > * {
+  flex-shrink: 0;
+}
+
+.rolesQuickLabel {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding-right: 2px;
+}
+
 .group {
   display: flex;
   flex-wrap: wrap;

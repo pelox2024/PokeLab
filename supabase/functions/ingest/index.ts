@@ -127,9 +127,12 @@ Deno.serve(async (req) => {
       return json({ ok: true, step, dictEntries: await buildDict() });
     }
     if (step === "vocab") {
+      // Post-traitement : vocabulaire (correction de fautes) + rôles deckbuilding.
       const { data, error } = await sb.rpc("refresh_search_vocab");
       if (error) throw error;
-      return json({ ok: true, step, added: data });
+      const { error: e2 } = await sb.rpc("classify_roles");
+      if (e2) throw e2;
+      return json({ ok: true, step, vocabAdded: data });
     }
     const page = Number(url.searchParams.get("page") ?? "1");
     const pages = Math.min(20, Number(url.searchParams.get("pages") ?? "8"));

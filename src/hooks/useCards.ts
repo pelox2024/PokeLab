@@ -12,16 +12,22 @@ const PAGE_SIZE = 40;
  * Recherche paginée (infinite scroll) des cartes, avec filtres et tri.
  * La requête est conservée en cache par TanStack Query.
  */
-export function useCardSearch(search: string, filters: CardFilters, sort: SortKey, enabled = true) {
-  // Recherche textuelle (nom OU texte des attaques/talents/règles) : index
-  // Supabase (pokemontcg). Sans terme, navigation classique TCGdex par nom.
-  const isTextSearch = !!search.trim();
+export function useCardSearch(
+  search: string,
+  filters: CardFilters,
+  sort: SortKey,
+  enabled = true,
+  useIndex = false,
+) {
+  // Index Supabase (pokemontcg) dès qu'il y a un terme OU un filtre de rôle :
+  // recherche dans le nom + le texte des attaques/talents/règles. Sinon,
+  // navigation classique TCGdex par nom.
   return useInfiniteQuery<CardPage>({
-    queryKey: ["cards", "search", isTextSearch ? "ft" : "tcgdex", search, filters, sort],
+    queryKey: ["cards", "search", useIndex ? "ft" : "tcgdex", search, filters, sort],
     enabled,
     queryFn: ({ pageParam }) => {
       const q = { search, filters, sort, page: pageParam as number, pageSize: PAGE_SIZE };
-      return isTextSearch ? searchCardsFullText(q) : activeProvider.searchCards(q);
+      return useIndex ? searchCardsFullText(q) : activeProvider.searchCards(q);
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),

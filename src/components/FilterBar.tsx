@@ -3,10 +3,13 @@ import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import type { CardFilters, SetInfo, SortKey } from "../api/types";
 import {
+  CARD_MECHANICS,
+  CARD_ROLES,
   CATEGORIES,
   POKEMON_TYPES,
   RARITIES,
   REGULATION_MARKS,
+  roleLabel,
   SORT_OPTIONS,
   SUBTYPES,
   typeLabel,
@@ -40,7 +43,7 @@ interface FilterBarProps {
   compact?: boolean;
 }
 
-type ArrayKey = "categories" | "types" | "subtypes" | "rarities" | "regulationMarks";
+type ArrayKey = "categories" | "types" | "subtypes" | "rarities" | "regulationMarks" | "roles";
 
 interface ActiveChip {
   id: string;
@@ -83,6 +86,8 @@ export function FilterBar({
 
   // ---- Chips actifs ----
   const activeChips: ActiveChip[] = [];
+  for (const r of filters.roles ?? [])
+    activeChips.push({ id: `role-${r}`, label: roleLabel(r), remove: () => removeValue("roles", r) });
   for (const c of filters.categories ?? [])
     activeChips.push({ id: `cat-${c}`, label: CATEGORIES.find((x) => x.value === c)?.label ?? c, remove: () => removeValue("categories", c) });
   for (const t of filters.types ?? [])
@@ -109,6 +114,25 @@ export function FilterBar({
   // ---- Groupes de filtres (réutilisés desktop inline + sheet mobile) ----
   const renderGroups = (opts: { includeTypes?: boolean; includeCategories?: boolean }): ReactNode => (
     <div className={styles.groups}>
+      <div className={styles.section}>
+        <span className={styles.sectionLabel}>Rôles (ce que fait la carte)</span>
+        <div className={styles.group}>
+          {CARD_ROLES.map((r) => (
+            <Chip key={r.value} active={has("roles", r.value)} accent="var(--accent)" onClick={() => toggle("roles", r.value)}>
+              {r.label}
+            </Chip>
+          ))}
+        </div>
+        <span className={styles.label}>Mécaniques</span>
+        <div className={styles.group}>
+          {CARD_MECHANICS.map((r) => (
+            <Chip key={r.value} active={has("roles", r.value)} onClick={() => toggle("roles", r.value)}>
+              {r.label}
+            </Chip>
+          ))}
+        </div>
+      </div>
+
       {opts.includeCategories && (
         <div className={styles.section}>
           <span className={styles.sectionLabel}>Catégorie</span>
@@ -249,6 +273,18 @@ export function FilterBar({
           </Button>
         </div>
       </div>
+      )}
+
+      {/* Rôles : accès rapide (fonctionnalité phare, défilement horizontal) */}
+      {!bottomBar && !compact && (
+        <div className={styles.rolesQuick}>
+          <span className={styles.rolesQuickLabel}>Rôles</span>
+          {CARD_ROLES.map((r) => (
+            <Chip key={r.value} active={has("roles", r.value)} accent="var(--accent)" onClick={() => toggle("roles", r.value)}>
+              {r.label}
+            </Chip>
+          ))}
+        </div>
       )}
 
       {/* Chips actifs */}

@@ -147,6 +147,8 @@ export interface CardFilters {
   includePocket?: boolean;
   /** N'afficher que les cartes de ma collection (filtre client). */
   ownedOnly?: boolean;
+  /** Rôles deckbuilding + mécaniques (index Supabase). Cumulatifs (ET). */
+  roles?: string[];
 }
 
 export type SortKey = "set-recent" | "set-old" | "number-asc" | "name-asc" | "name-desc";

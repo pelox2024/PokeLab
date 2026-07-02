@@ -99,8 +99,9 @@ function mapFilters(filters?: CardFilters) {
   return {
     p_set: null as string | null,
     p_supertype: category,
-    p_types: null as string[] | null, // types/sous-types : appliqués en navigation TCGdex (v1)
-    p_subtypes: null as string[] | null,
+    p_types: filters?.types?.length ? filters.types : null, // noms de types alignés EN
+    p_subtypes: null as string[] | null, // sous-types : valeurs divergentes, via rôles/mécaniques
+    p_roles: filters?.roles?.length ? filters.roles : null,
     p_standard: filters?.standardLegal ? true : null,
     p_expanded: filters?.expandedLegal ? true : null,
   };

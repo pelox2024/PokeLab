@@ -69,6 +69,49 @@ export const SUBTYPES: SubtypeOption[] = [
 ];
 
 /**
+ * Rôles deckbuilding (fonction de la carte) — recherchés via l'index Supabase,
+ * qui pré-classe chaque carte. Permet de filtrer par « ce que fait la carte ».
+ */
+export interface RoleOption {
+  value: string;
+  label: string;
+}
+
+export const CARD_ROLES: RoleOption[] = [
+  { value: "draw", label: "Pioche" },
+  { value: "search-pokemon", label: "Cherche Pokémon" },
+  { value: "search", label: "Recherche deck" },
+  { value: "energy-accel", label: "Accél. énergie" },
+  { value: "gust", label: "Gust / rappel" },
+  { value: "switch", label: "Changement" },
+  { value: "bench-damage", label: "Dégâts au banc" },
+  { value: "spread-ability", label: "Dégâts (Talent)" },
+  { value: "hand-disrupt", label: "Disruption main" },
+  { value: "heal", label: "Soin" },
+  { value: "protect", label: "Protection" },
+  { value: "recovery", label: "Récupération" },
+];
+
+/** Mécaniques (structure de la carte) — mêmes tags que les rôles côté index. */
+export const CARD_MECHANICS: RoleOption[] = [
+  { value: "ability", label: "Avec Talent" },
+  { value: "ex", label: "ex" },
+  { value: "v", label: "V" },
+  { value: "vstar", label: "VSTAR" },
+  { value: "vmax", label: "VMAX" },
+  { value: "tera", label: "Téra" },
+  { value: "acespec", label: "ACE SPEC" },
+];
+
+/** Libellé FR d'un tag de rôle/mécanique. */
+const ROLE_LABELS: Record<string, string> = Object.fromEntries(
+  [...CARD_ROLES, ...CARD_MECHANICS].map((r) => [r.value, r.label]),
+);
+export function roleLabel(value: string): string {
+  return ROLE_LABELS[value] ?? value;
+}
+
+/**
  * Raretés réelles TCGdex (valeurs exactes vérifiées via l'API).
  * Triées du plus commun au plus rare / spécial.
  */

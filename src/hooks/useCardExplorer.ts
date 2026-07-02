@@ -41,7 +41,9 @@ export function useCardExplorer(
   sets: SetInfo[] | undefined,
   options?: Options,
 ): CardExplorer {
-  const binderMode = !debounced.trim() && (sort === "set-recent" || sort === "set-old");
+  // Index Supabase dès qu'il y a un terme de recherche OU un filtre de rôle.
+  const usesIndex = !!debounced.trim() || !!filters.roles?.length;
+  const binderMode = !usesIndex && (sort === "set-recent" || sort === "set-old");
 
   const pocketSetIds = useMemo(
     () => new Set((sets ?? []).filter((s) => s.seriesId === "tcgp").map((s) => s.id)),
@@ -59,24 +61,23 @@ export function useCardExplorer(
 
   const browseKey = `${sort}:${orderedSets.length}:${JSON.stringify(filters)}`;
   const browse = useCardBrowse(orderedSets, filters, browseKey, binderMode);
-  const flat = useCardSearch(debounced, filters, sort, !binderMode);
+  const flat = useCardSearch(debounced, filters, sort, !binderMode, usesIndex);
   const q = binderMode ? browse : flat;
 
-  // Recherche textuelle : résultats déjà classés par pertinence côté serveur —
-  // on préserve cet ordre (le tri client par set/nom ne s'applique qu'en navigation).
-  const isTextSearch = !!debounced.trim();
+  // Résultats d'index : déjà classés par pertinence côté serveur — on préserve
+  // cet ordre (le tri client par set/nom ne s'applique qu'en navigation TCGdex).
   const flatCards: CardBrief[] = useMemo(() => {
     if (binderMode) return [];
     let items = flat.data?.pages.flatMap((p) => p.items) ?? [];
     if (excludePocket) items = items.filter((c) => !isPocket(c.providerId));
-    if (isTextSearch) return items;
+    if (usesIndex) return items;
     // Navigation (visuelle) : on masque les cartes sans image (ex. promos tout
     // juste sorties non encore illustrées par TCGdex) — elles restent trouvables
     // via la recherche et réapparaissent dès que l'image est disponible.
     items = items.filter((c) => c.imageUrl);
     return sortCards(items, sort, setRank);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [binderMode, flat.data, sort, setRank, excludePocket, pocketSetIds, isTextSearch]);
+  }, [binderMode, flat.data, sort, setRank, excludePocket, pocketSetIds, usesIndex]);
 
   const sections: CardSection[] = useMemo(() => {
     if (!binderMode) return [];

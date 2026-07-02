@@ -26,10 +26,18 @@ publique (TCGdex ne sait pas chercher dans le texte des cartes côté serveur).
 2. **Tolérance aux fautes** — chaque mot est comparé au vocabulaire du corpus
    (trigrammes `pg_trgm`) ; une correction est ajoutée en OR (jamais à la place
    du littéral) → « dammage » → damage, « dracaufue » → Dracaufeu.
-3. **Classement** — correspondances de nom d'abord, puis cartes jouables
+3. **Glossaire FR → EN** (`fr_en_glossary`) — termes d'effet français traduits
+   vers l'anglais : « soigne » → heal, « banc » → bench, « talent » → ability,
+   « pioche » → draw, « défausse » → discard… (insensible aux accents).
+4. **Filtres par rôle** (`p_roles`, colonne `roles[]` remplie par `classify_roles`)
+   — filtrer par fonction deckbuilding (pioche, accélération d'énergie, gust,
+   dégâts au banc, soin, disruption…) et mécanique (ex, V, VSTAR, VMAX, Téra,
+   ACE SPEC, « avec Talent »). Cumulatifs (ET, `roles @> p_roles`).
+5. **Classement** — correspondances de nom d'abord, puis cartes jouables
    (Standard), puis les plus récentes.
 
 Tokeniseur `simple` (sans stemming) partout pour un préfixe cohérent nom + texte.
+Le rafraîchissement (`?step=vocab`) régénère aussi les rôles (`classify_roles`).
 
 ## Ingestion / rafraîchissement (nouvelle extension)
 
