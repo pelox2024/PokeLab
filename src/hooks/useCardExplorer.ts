@@ -69,7 +69,12 @@ export function useCardExplorer(
     if (binderMode) return [];
     let items = flat.data?.pages.flatMap((p) => p.items) ?? [];
     if (excludePocket) items = items.filter((c) => !isPocket(c.providerId));
-    return isTextSearch ? items : sortCards(items, sort, setRank);
+    if (isTextSearch) return items;
+    // Navigation (visuelle) : on masque les cartes sans image (ex. promos tout
+    // juste sorties non encore illustrées par TCGdex) — elles restent trouvables
+    // via la recherche et réapparaissent dès que l'image est disponible.
+    items = items.filter((c) => c.imageUrl);
+    return sortCards(items, sort, setRank);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [binderMode, flat.data, sort, setRank, excludePocket, pocketSetIds, isTextSearch]);
 
@@ -77,12 +82,17 @@ export function useCardExplorer(
     if (!binderMode) return [];
     return (browse.data?.pages ?? [])
       .flatMap((p) => p.sets)
-      .map(({ set, items }) => ({
-        key: set.id,
-        title: set.name,
-        subtitle: `${set.releaseDate?.slice(0, 4) ?? ""} · ${items.length} cartes`.trim(),
-        cards: items,
-      }));
+      .map(({ set, items }) => {
+        // Classeur visuel : on écarte les cartes sans image et les sets vides.
+        const cards = items.filter((c) => c.imageUrl);
+        return {
+          key: set.id,
+          title: set.name,
+          subtitle: `${set.releaseDate?.slice(0, 4) ?? ""} · ${cards.length} cartes`.trim(),
+          cards,
+        };
+      })
+      .filter((s) => s.cards.length > 0);
   }, [binderMode, browse.data]);
 
   // Filtre "possédées uniquement" (client) : on garde les cartes en collection.
