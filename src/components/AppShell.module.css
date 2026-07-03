@@ -192,6 +192,20 @@
   animation: pageFade var(--t-slow);
 }
 
+/* Navigateurs avec View Transitions natives : c'est l'API qui anime la route
+   (fondu du contenu, barres stables) — on évite le double fondu. */
+@supports (view-transition-name: none) {
+  .pageTransition {
+    animation: none;
+  }
+  .nav {
+    view-transition-name: topnav;
+  }
+  .bottomNav {
+    view-transition-name: bottomnav;
+  }
+}
+
 @keyframes pageFade {
   from {
     opacity: 0;

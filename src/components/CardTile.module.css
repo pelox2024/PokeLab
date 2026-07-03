@@ -20,6 +20,12 @@
   transform: translateY(-4px);
 }
 
+/* Retour tactile au tap (mobile) : léger enfoncement. */
+.tile:active {
+  transform: scale(0.97);
+  transition: transform var(--t-fast);
+}
+
 .perspective {
   perspective: 900px;
 }
@@ -282,4 +288,26 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Révélation au défilement : chaque carte se fond à son entrée dans le viewport
+   (fondu seul → aucune interférence avec le tilt/lift au survol). Remplace la
+   cascade au montage sur les navigateurs compatibles ; sûr en mouvement réduit. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .tile {
+      animation: tileReveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 42%;
+    }
+  }
+}
+
+@keyframes tileReveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

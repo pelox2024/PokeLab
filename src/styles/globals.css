@@ -157,6 +157,57 @@ body {
   }
 }
 
+/* Révélation au défilement (scroll-driven, natif — tendance 2026). */
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Utilitaire : les éléments se dévoilent à leur entrée dans le viewport.
+   Progressif (only si supporté) et désactivé si mouvement réduit. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: revealUp linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 50%;
+    }
+  }
+}
+
+/* Transitions de vue natives (navigation) : fondu doux du contenu, barres de
+   navigation stables. Repli : navigation instantanée sur navigateurs anciens. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 260ms;
+    animation-timing-function: var(--ease-out);
+  }
+  ::view-transition-new(root) {
+    animation-name: vtFadeIn;
+  }
+  ::view-transition-old(root) {
+    animation-name: vtFadeOut;
+  }
+}
+@keyframes vtFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes vtFadeOut {
+  to {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

@@ -98,7 +98,7 @@ export function Settings() {
       </header>
 
       {/* Affichage */}
-      <section className={styles.section}>
+      <section className={`${styles.section} reveal`}>
         <div className={styles.sectionHead}>
           <span className={styles.sectionTitle}>
             <Icon name="cards" size={16} /> Affichage
@@ -143,7 +143,7 @@ export function Settings() {
       </section>
 
       {/* Données locales */}
-      <section className={styles.section}>
+      <section className={`${styles.section} reveal`}>
         <div className={styles.sectionHead}>
           <span className={styles.sectionTitle}>
             <Icon name="decks" size={16} /> Mes données
@@ -213,7 +213,7 @@ export function Settings() {
       </section>
 
       {/* À propos */}
-      <section className={styles.section}>
+      <section className={`${styles.section} reveal`}>
         <div className={styles.sectionHead}>
           <span className={styles.sectionTitle}>
             <Icon name="spark" size={16} /> À propos

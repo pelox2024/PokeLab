@@ -55,6 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <NavLink
                 key={item.to}
                 to={item.to}
+                viewTransition
                 className={({ isActive }) =>
                   [styles.link, isSectionActive(item.to, pathname, isActive) ? styles.linkActive : ""].filter(Boolean).join(" ")
                 }
@@ -89,6 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 end={item.to === "/"}
+                viewTransition
                 onClick={() => setMenuOpen(false)}
                 className={({ isActive }) =>
                   [styles.menuLink, isSectionActive(item.to, pathname, isActive) ? styles.menuLinkActive : ""].filter(Boolean).join(" ")
@@ -115,6 +117,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             key={item.to}
             to={item.to}
             end={item.end}
+            viewTransition
             className={({ isActive }) =>
               [styles.bottomTab, isSectionActive(item.to, pathname, isActive) ? styles.bottomTabActive : ""].filter(Boolean).join(" ")
             }
