@@ -8,6 +8,7 @@
  */
 
 import { rpc } from "../lib/supabase";
+import { getDisplayLang } from "./cardApi";
 import { resolveFoilStyle } from "../lib/foil";
 import type {
   Ability,
@@ -79,6 +80,7 @@ function normalizeSubtypes(subtypes?: string[]): { subtypes: string[]; suffix?: 
 }
 
 function briefFromRow(r: SearchRow): CardBrief {
+  const fr = getDisplayLang() === "fr";
   return {
     id: `ptcg:${r.id}`,
     provider: "ptcg",
@@ -86,7 +88,7 @@ function briefFromRow(r: SearchRow): CardBrief {
     name: r.name, // nom canonique EN (compat decklists)
     nameEn: r.name,
     nameFr: r.name_fr ?? undefined,
-    displayName: r.name,
+    displayName: fr && r.name_fr ? r.name_fr : r.name,
     searchAliases: r.name_fr ? [r.name_fr] : undefined,
     localId: r.number ?? undefined,
     imageUrl: r.image_large ?? r.image_small ?? undefined,

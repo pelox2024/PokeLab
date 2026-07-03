@@ -5,7 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@fontsource-variable/geist/index.css";
 import "@fontsource-variable/space-grotesk/index.css";
 import App from "./App.tsx";
+import { initPrefs } from "./lib/prefs";
 import "./styles/globals.css";
+
+initPrefs();
 
 const queryClient = new QueryClient({
   defaultOptions: {

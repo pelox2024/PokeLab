@@ -7,13 +7,15 @@ import {
   tcgdexProvider,
   setCardLang,
   setDisplayLang,
+  getDisplayLang,
   setBilingualSearch,
+  getBilingualSearch,
 } from "./tcgdexProvider";
 import type { CardProvider } from "./types";
 
 export const activeProvider: CardProvider = tcgdexProvider;
 
-export { setCardLang, setDisplayLang, setBilingualSearch };
+export { setCardLang, setDisplayLang, getDisplayLang, setBilingualSearch, getBilingualSearch };
 export type {
   CardRecord,
   CardBrief,

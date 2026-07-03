@@ -6,7 +6,7 @@ import { Builder } from "./pages/Builder";
 import { MyDecks } from "./pages/MyDecks";
 import { Collection } from "./pages/Collection";
 import { Analysis } from "./pages/Analysis";
-import { Settings } from "./pages/Placeholder";
+import { Settings } from "./pages/Settings";
 
 export default function App() {
   return (

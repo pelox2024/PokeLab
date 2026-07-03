@@ -39,8 +39,14 @@ let bilingualSearch = true;
 export function setDisplayLang(lang: CardLang) {
   displayLang = lang;
 }
+export function getDisplayLang(): CardLang {
+  return displayLang;
+}
 export function setBilingualSearch(enabled: boolean) {
   bilingualSearch = enabled;
+}
+export function getBilingualSearch(): boolean {
+  return bilingualSearch;
 }
 /** Compat ascendante (Lot 1). */
 export function setCardLang(lang: string) {
