@@ -62,6 +62,45 @@ button {
   font-family: inherit;
 }
 
+/* ============================================================
+   Fondations tactiles mobile (bonnes pratiques 2026)
+   ============================================================ */
+
+/* Supprime le flash gris au tap + le délai de 300ms, garde le tap net. */
+:where(a, button, [role="button"], input, select, textarea, label, summary) {
+  -webkit-tap-highlight-color: transparent;
+}
+:where(a, button, [role="button"], select, summary, [tabindex]) {
+  touch-action: manipulation;
+}
+
+/* Contrôles natifs teintés (cases, fichier, curseurs) à l'accent de la marque. */
+:where(input, button, select, textarea) {
+  accent-color: var(--accent);
+}
+
+/* Évite le rebond/enchaînement du scroll ; pas de redim. auto du texte. */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  overscroll-behavior-y: contain;
+}
+
+@media (max-width: 720px) {
+  /* ≥ 16px sur les champs = pas de zoom iOS au focus. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  /* Petits textes légèrement agrandis pour la lisibilité (interfaces « calmes »). */
+  :root {
+    --fs-xs: 0.76rem;
+    --fs-sm: 0.86rem;
+  }
+}
+
 /* Accessibilité : anneau de focus clavier cohérent (souris = pas d'anneau).
    :where() garde une spécificité nulle pour laisser les composants surcharger. */
 :where(a, button, input, textarea, select, [role="button"], [tabindex]):focus-visible {

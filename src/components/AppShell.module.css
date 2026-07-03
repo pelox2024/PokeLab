@@ -213,29 +213,58 @@
 }
 
 .bottomTab {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
+  padding-top: 4px;
   border: none;
   background: none;
   color: var(--text-faint);
   font-family: inherit;
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
   transition: color var(--t-fast);
 }
 
+/* Indicateur d'onglet actif (petite barre en haut, dans la zone du pouce). */
+.bottomTab::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 22px;
+  height: 3px;
+  border-radius: 0 0 var(--radius-pill) var(--radius-pill);
+  background: var(--accent);
+  opacity: 0;
+  transform: scaleX(0.4);
+  transition: opacity var(--t-fast), transform var(--t-med);
+}
+
 .bottomTab:active {
   transform: scale(0.94);
 }
 
+.bottomTab :global(svg) {
+  transition: transform var(--t-med) var(--ease-spring);
+}
+
 .bottomTabActive {
   color: var(--accent);
+}
+
+.bottomTabActive::before {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.bottomTabActive :global(svg) {
+  transform: translateY(-1px) scale(1.08);
 }
 
 @media (max-width: 860px) {

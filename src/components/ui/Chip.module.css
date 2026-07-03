@@ -30,6 +30,14 @@
   transform: scale(0.95);
 }
 
+/* Cible tactile confortable sur mobile (≈ 40px de haut). */
+@media (max-width: 720px) {
+  .chip {
+    min-height: 40px;
+    padding: 9px 15px;
+  }
+}
+
 .active {
   color: #fff;
   background: color-mix(in srgb, var(--chip-accent) 22%, transparent);

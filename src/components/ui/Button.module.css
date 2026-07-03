@@ -40,6 +40,17 @@
   padding: 10px 18px;
 }
 
+/* Cible tactile confortable sur mobile (≥ 44px de haut). */
+@media (max-width: 720px) {
+  .sm {
+    min-height: 40px;
+    padding: 9px 16px;
+  }
+  .md {
+    min-height: 46px;
+  }
+}
+
 /* Variants */
 .primary {
   color: #fff;
