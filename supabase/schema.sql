@@ -121,8 +121,23 @@ returns void language sql as $$
         lower(c.name || ' ' || coalesce(c.attacks_text, '') || ' ' || coalesce(c.abilities_text, '') || ' ' || coalesce(c.rules_text, '')) as t,
         lower(coalesce(c.abilities_text, '')) as ab
     ) s
-  );
+  )
+  where c.id is not null;  -- WHERE requis (garde-fou safe-update du service role)
 $$;
+
+-- ── Rafraîchissement automatique (nouvelles extensions) ────────────────────
+-- La fonction edge `ingest?step=recent` ré-ingère les cartes les plus récentes
+-- (orderBy=-set.releaseDate) puis rejoue vocab + rôles. Un cron hebdomadaire
+-- (pg_cron + pg_net) l'appelle pour intégrer les nouvelles extensions sans
+-- intervention :
+--   create extension if not exists pg_cron;
+--   create extension if not exists pg_net;
+--   select cron.schedule('pokelab-weekly-refresh', '0 6 * * 1', $c$
+--     select net.http_post(
+--       url := 'https://<ref>.supabase.co/functions/v1/ingest?step=recent&pages=3',
+--       headers := '{"Authorization":"Bearer <anon JWT>","Content-Type":"application/json"}'::jsonb,
+--       timeout_milliseconds := 150000);
+--   $c$);
 
 -- ── Construction de la tsquery « recherche moderne » ───────────────────────
 -- Chaque mot = préfixe (as-you-type, ordre/position libres). Glossaire FR -> EN

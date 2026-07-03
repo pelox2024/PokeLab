@@ -57,6 +57,21 @@ curl -X POST "$BASE?step=cards&page=1&pages=10" -H "$AUTH"
 curl -X POST "$BASE?step=vocab" -H "$AUTH"
 ```
 
+### Rafraîchissement automatique (nouvelles extensions)
+
+`?step=recent` ré-ingère les cartes les plus récentes (par date de sortie) puis
+rejoue vocabulaire + rôles, en un seul appel léger — idéal pour un cron.
+
+Un cron **hebdomadaire** (pg_cron + pg_net, job `pokelab-weekly-refresh`, lundi
+06:00 UTC) l'appelle automatiquement : les nouvelles extensions (ex. Pitch Black)
+entrent dans l'index de recherche dès qu'elles sont publiées sur pokemontcg.io,
+sans intervention. La navigation classeur (TCGdex) les affiche déjà en direct.
+
+```bash
+# Déclenchement manuel possible :
+curl -X POST "$BASE?step=recent&pages=3" -H "$AUTH"
+```
+
 ## Configuration côté app
 
 `src/lib/supabase.ts` lit `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, avec

@@ -86,7 +86,7 @@ async function buildDict() {
   return rows.length;
 }
 
-async function ingestCards(page: number, pages: number) {
+async function ingestCards(page: number, pages: number, order?: string) {
   const { data: dictRows, error: de } = await sb.from("name_fr_dict").select("name_en,name_fr");
   if (de) throw de;
   const fr = new Map<string, string>();
@@ -97,6 +97,7 @@ async function ingestCards(page: number, pages: number) {
     "regulationMark", "images", "set", "legalities", "attacks", "abilities",
     "rules", "flavorText", "nationalPokedexNumbers",
   ].join(",");
+  const orderBy = order ? `&orderBy=${encodeURIComponent(order)}` : "";
 
   let inserted = 0;
   let done = false;
@@ -105,7 +106,7 @@ async function ingestCards(page: number, pages: number) {
   for (let i = 0; i < pages; i++) {
     const p = page + i;
     last = p;
-    const url = `https://api.pokemontcg.io/v2/cards?page=${p}&pageSize=250&select=${select}`;
+    const url = `https://api.pokemontcg.io/v2/cards?page=${p}&pageSize=250&select=${select}${orderBy}`;
     const res = await fetch(url).then((r) => r.json());
     const data: PtcgCard[] = res.data ?? [];
     total = res.totalCount ?? total;
@@ -117,6 +118,17 @@ async function ingestCards(page: number, pages: number) {
     if (data.length < 250) { done = true; break; }
   }
   return { inserted, done, nextPage: done ? null : last + 1, total };
+}
+
+/** Rafraîchit les cartes les plus récentes (nouvelles extensions) + vocab + rôles.
+ *  Idempotent, léger : conçu pour un cron hebdomadaire. */
+async function refreshRecent(pages: number) {
+  const r = await ingestCards(1, pages, "-set.releaseDate");
+  const { error: ev } = await sb.rpc("refresh_search_vocab");
+  if (ev) throw ev;
+  const { error: er } = await sb.rpc("classify_roles");
+  if (er) throw er;
+  return r;
 }
 
 Deno.serve(async (req) => {
@@ -133,6 +145,12 @@ Deno.serve(async (req) => {
       const { error: e2 } = await sb.rpc("classify_roles");
       if (e2) throw e2;
       return json({ ok: true, step, vocabAdded: data });
+    }
+    if (step === "recent") {
+      // Rafraîchit les extensions récentes (cron hebdomadaire) : nouvelles cartes
+      // (ex. nouvelle extension) + vocabulaire + rôles, en un seul appel.
+      const pages = Math.min(6, Number(url.searchParams.get("pages") ?? "3"));
+      return json({ ok: true, step, ...(await refreshRecent(pages)) });
     }
     const page = Number(url.searchParams.get("page") ?? "1");
     const pages = Math.min(20, Number(url.searchParams.get("pages") ?? "8"));
