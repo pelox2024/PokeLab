@@ -4,9 +4,18 @@
  * Définis dès maintenant pour figer la structure.
  */
 
-import type { CardCategory } from "../api/types";
+import type { CardCategory, CardFilters } from "../api/types";
 
 export type DeckFormat = "standard" | "expanded" | "unlimited";
+
+/** Recherche enregistrée (terme + filtres) réappliquable en un clic. */
+export interface SavedSearch {
+  id: string;
+  name: string;
+  query: string;
+  filters: CardFilters;
+  createdAt: number;
+}
 
 export interface DeckCard {
   id: string;

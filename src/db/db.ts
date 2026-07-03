@@ -12,6 +12,7 @@ import type {
   CollectionItem,
   Deck,
   DeckVersion,
+  SavedSearch,
   WishlistItem,
 } from "./schema";
 
@@ -23,6 +24,7 @@ export class PokeLabDB extends Dexie {
   collection!: Table<CollectionItem, string>;
   binders!: Table<Binder, string>;
   wishlist!: Table<WishlistItem, string>;
+  savedSearches!: Table<SavedSearch, string>;
 
   constructor() {
     super("pokelab");
@@ -36,6 +38,10 @@ export class PokeLabDB extends Dexie {
       collection: "id, cardId, setCode, variant, binderId, updatedAt",
       binders: "id, name, updatedAt",
       wishlist: "id, cardId, priority, updatedAt",
+    });
+    // v3 : recherches enregistrées (terme + filtres).
+    this.version(3).stores({
+      savedSearches: "id, name, createdAt",
     });
   }
 }

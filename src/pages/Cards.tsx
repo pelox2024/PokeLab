@@ -9,6 +9,7 @@ import { fr } from "../lib/i18n";
 import { CardGrid } from "../components/CardGrid";
 import type { GridSize } from "../components/CardGrid";
 import { FilterBar } from "../components/FilterBar";
+import { SavedSearches } from "../components/SavedSearches";
 import { CardDetailModal } from "../components/CardDetailModal";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
@@ -93,6 +94,15 @@ export function Cards() {
         search={search}
         onSearchChange={setSearch}
         mobileBottomBar
+      />
+
+      <SavedSearches
+        search={search}
+        filters={filters}
+        onApply={(q, f) => {
+          setSearch(q);
+          setFilters(f);
+        }}
       />
 
       {showResults && (
