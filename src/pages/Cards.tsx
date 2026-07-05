@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useSets } from "../hooks/useCards";
 import { useCardExplorer } from "../hooks/useCardExplorer";
 import { adjustOwned, useOwnedMap } from "../db/collection";
@@ -27,7 +27,20 @@ const DENSITY_OPTIONS: { value: GridSize; label: string }[] = [
 ];
 
 export function Cards() {
-  const [search, setSearch] = useState("");
+  // La recherche vit dans l'URL (?q=…) : lien partageable + pilotable depuis la
+  // palette de commandes (⌘K → /cartes?q=…), sans état dupliqué.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get("q") ?? "";
+  const setSearch = (v: string) =>
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (v) p.set("q", v);
+        else p.delete("q");
+        return p;
+      },
+      { replace: true },
+    );
   const [filters, setFilters] = useState<CardFilters>({});
   const [sort, setSort] = useState<SortKey>("set-recent");
   const [selected, setSelected] = useState<string | null>(null);

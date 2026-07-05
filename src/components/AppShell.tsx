@@ -5,6 +5,8 @@ import { fr } from "../lib/i18n";
 import { Icon } from "./ui/Icon";
 import { Logo } from "./ui/Logo";
 import { Toaster } from "./ui/Toaster";
+import { CommandPalette } from "./CommandPalette";
+import { useCommandStore } from "../store/commandStore";
 import styles from "./AppShell.module.css";
 
 // Le Constructeur (/builder) n'est pas une destination à part : c'est l'éditeur
@@ -67,6 +69,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className={styles.right}>
+            <button
+              type="button"
+              className={styles.cmdk}
+              onClick={() => useCommandStore.getState().setOpen(true)}
+              aria-label="Rechercher et commandes (Ctrl+K)"
+            >
+              <Icon name="search" size={15} />
+              <span className={styles.cmdkText}>Rechercher</span>
+              <span className={styles.cmdkKbd}>
+                <kbd>⌘</kbd>
+                <kbd>K</kbd>
+              </span>
+            </button>
             <span className={styles.lang}>FR</span>
             <button
               type="button"
@@ -132,6 +147,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </button>
       </nav>
 
+      <CommandPalette />
       <Toaster />
     </div>
   );

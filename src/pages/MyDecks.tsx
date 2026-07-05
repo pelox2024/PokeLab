@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../db/db";
 import type { Deck, DeckVersion } from "../db/schema";
@@ -33,6 +33,14 @@ export function MyDecks() {
   const load = useDeckStore((s) => s.load);
   const [showArchived, setShowArchived] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [params, setParams] = useSearchParams();
+
+  // Création pilotée depuis la palette de commandes (⌘K → /decks?new=1).
+  const showCreate = creating || params.get("new") === "1";
+  const closeCreate = () => {
+    setCreating(false);
+    if (params.get("new")) setParams({}, { replace: true });
+  };
 
   const summaries = useLiveQuery<Summary[]>(async () => {
     const decks = await db.decks.orderBy("updatedAt").reverse().toArray();
@@ -150,7 +158,7 @@ export function MyDecks() {
         </div>
       )}
 
-      <CreateDeckModal open={creating} onClose={() => setCreating(false)} />
+      <CreateDeckModal open={showCreate} onClose={closeCreate} />
     </div>
   );
 }
