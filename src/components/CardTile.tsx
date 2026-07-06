@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { CardBrief, CardRecord, FoilStyle } from "../api/types";
 import { getCardVisualTreatment, isFullArtRarity } from "../lib/foil";
 import type { CardVisualTreatment } from "../lib/foil";
+import { cardImg } from "../lib/img";
 import { useFoilHover } from "../hooks/useFoilHover";
 import { FoilOverlay } from "./ui/FoilOverlay";
 import { Icon } from "./ui/Icon";
@@ -87,12 +88,21 @@ export function CardTile({ card, onClick, rarityHint, inDeckQty, owned, onOwnAdj
           {!showFallback && (
             <img
               className={[styles.img, loaded ? styles.imgLoaded : ""].filter(Boolean).join(" ")}
-              src={card.imageUrl}
+              src={cardImg(card.imageUrl, 300)}
               alt={card.displayName || card.name}
               loading="lazy"
               decoding="async"
               onLoad={() => setLoaded(true)}
-              onError={() => setErrored(true)}
+              onError={(e) => {
+                // Proxy en échec → image d'origine ; puis seulement, repli visuel.
+                const img = e.currentTarget;
+                if (img.dataset.raw !== "1" && card.imageUrl) {
+                  img.dataset.raw = "1";
+                  img.src = card.imageUrl;
+                } else {
+                  setErrored(true);
+                }
+              }}
             />
           )}
 

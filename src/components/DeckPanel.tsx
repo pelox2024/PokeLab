@@ -8,6 +8,7 @@ import { fr } from "../lib/i18n";
 import { Icon } from "./ui/Icon";
 import { Select } from "./ui/Select";
 import { AnimatedNumber } from "./ui/AnimatedNumber";
+import { CardImg } from "./ui/CardImg";
 import { DeckStats } from "./DeckStats";
 import styles from "./DeckPanel.module.css";
 
@@ -67,13 +68,7 @@ function DeckCardTile({
         onClick={() => providerId && onInspect?.(providerId)}
         title={card.name}
       >
-        {card.imageUrl ? (
-          <img src={card.imageUrl} alt={card.name} loading="lazy" decoding="async" />
-        ) : (
-          <span className={styles.pileFallback}>
-            <Icon name="cards" size={18} />
-          </span>
-        )}
+        <CardImg url={card.imageUrl} width={220} alt={card.name} />
         {typeColor && <span className={styles.typeAccent} style={{ background: typeColor }} />}
         <span className={styles.pileQty}>×{card.quantity}</span>
         <button
@@ -117,7 +112,7 @@ function DeckListRow({ card, onInspect }: { card: DeckCard; onInspect?: (pid: st
         title={card.name}
       >
         <span className={styles.listThumb}>
-          {card.imageUrl ? <img src={card.imageUrl} alt="" loading="lazy" /> : <Icon name="cards" size={12} />}
+          <CardImg url={card.imageUrl} width={90} alt="" />
         </span>
         <span className={styles.listName}>{card.name}</span>
         {(card.setCode || card.number) && (

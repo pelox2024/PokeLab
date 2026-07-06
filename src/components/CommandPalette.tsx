@@ -6,6 +6,7 @@ import { searchCardsFullText } from "../api/ptcgProvider";
 import { downloadBackup } from "../db/backup";
 import { getLangPref, setLangPref } from "../lib/prefs";
 import { useDebounce } from "../lib/useDebounce";
+import { cardImg } from "../lib/img";
 import { toast } from "../store/toastStore";
 import { useCommandStore } from "../store/commandStore";
 import type { CardBrief } from "../api/types";
@@ -233,7 +234,7 @@ function Palette({ onClose }: { onClose: () => void }) {
                     onClick={() => go(`/cartes?q=${encodeURIComponent(c.name)}`)}
                   >
                     <span className={styles.thumb}>
-                      {c.imageUrl ? <img src={c.imageUrl} alt="" loading="lazy" /> : <Icon name="cards" size={14} />}
+                      {c.imageUrl ? <img src={cardImg(c.imageUrl, 90)} alt="" loading="lazy" /> : <Icon name="cards" size={14} />}
                     </span>
                     <span className={styles.itemLabel}>{c.displayName}</span>
                     {c.localId && <span className={styles.itemHint}>N° {c.localId}</span>}

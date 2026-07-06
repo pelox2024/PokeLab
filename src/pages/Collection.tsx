@@ -8,6 +8,7 @@ import { mapLimit } from "../api/deckEnrich";
 import { useDebounce } from "../lib/useDebounce";
 import { setRecencyValue } from "../lib/cardSort";
 import { CardDetailModal } from "../components/CardDetailModal";
+import { CardImg } from "../components/ui/CardImg";
 import { Input } from "../components/ui/Input";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Icon } from "../components/ui/Icon";
@@ -39,13 +40,7 @@ function CollectionTile({ item, onInspect }: { item: CollectionItem; onInspect?:
         onClick={() => providerId && onInspect?.(providerId)}
         title={item.name}
       >
-        {item.imageUrl ? (
-          <img src={item.imageUrl} alt={item.name} loading="lazy" decoding="async" />
-        ) : (
-          <span className={styles.fallback}>
-            <Icon name="cards" size={20} />
-          </span>
-        )}
+        <CardImg url={item.imageUrl} width={240} alt={item.name} />
         <span className={styles.qtyBadge}>×{item.quantity}</span>
         <div className={styles.bar} onClick={stop}>
           <button type="button" onClick={() => adjustOwned(input, -1)} aria-label="Moins">

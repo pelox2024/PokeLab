@@ -4,6 +4,7 @@ import type { CardBrief, CardPricing, CardRecord } from "../api/types";
 import { useCardDetail, useCardVersions, usePokemontcgPrice } from "../hooks/useCards";
 import { useFoilHover } from "../hooks/useFoilHover";
 import { getCardVisualTreatment } from "../lib/foil";
+import { cardImg } from "../lib/img";
 import { cardmarketLink, canShowPrice, hasExactLink, pickCardmarket } from "../lib/pricing";
 import { useDeckStore } from "../store/deckStore";
 import { adjustOwned, useOwnedMap } from "../db/collection";
@@ -77,7 +78,7 @@ function FoilImage({ card }: { card: CardRecord }) {
         onPointerLeave={onPointerLeave}
       >
         {card.imageUrl ? (
-          <img className={styles.image} src={card.imageUrl} alt={card.displayName} />
+          <img className={styles.image} src={cardImg(card.imageUrl, 520)} alt={card.displayName} />
         ) : (
           <div className={styles.imageFallback}>
             <Icon name="cards" size={40} />

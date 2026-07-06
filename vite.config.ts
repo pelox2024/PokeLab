@@ -37,13 +37,13 @@ export default defineConfig({
         clientsClaim: true,
         runtimeCaching: [
           {
-            // Images des cartes (TCGdex, pokemontcg, scrydex) : immuables → cache long.
+            // Images des cartes (proxy WebP weserv + CDN d'origine) : immuables → cache long.
             urlPattern: ({ url }) =>
-              /(assets\.tcgdex\.net|images\.pokemontcg\.io|images\.scrydex\.com)/.test(url.href),
+              /(images\.weserv\.nl|assets\.tcgdex\.net|images\.pokemontcg\.io|images\.scrydex\.com)/.test(url.href),
             handler: 'CacheFirst',
             options: {
               cacheName: 'card-images',
-              expiration: { maxEntries: 1200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              expiration: { maxEntries: 1500, maxAgeSeconds: 60 * 60 * 24 * 30 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
