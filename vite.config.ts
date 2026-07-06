@@ -39,7 +39,7 @@ export default defineConfig({
           {
             // Images des cartes (proxy WebP weserv + CDN d'origine) : immuables → cache long.
             urlPattern: ({ url }) =>
-              /(images\.weserv\.nl|assets\.tcgdex\.net|images\.pokemontcg\.io|images\.scrydex\.com)/.test(url.href),
+              /(res\.cloudinary\.com|images\.weserv\.nl|assets\.tcgdex\.net|images\.pokemontcg\.io|images\.scrydex\.com)/.test(url.href),
             handler: 'CacheFirst',
             options: {
               cacheName: 'card-images',
