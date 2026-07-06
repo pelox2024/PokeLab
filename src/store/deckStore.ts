@@ -11,6 +11,9 @@ export interface AddCardInput {
   imageUrl?: string;
   rarity?: string;
   subtypes?: string[];
+  suffix?: string;
+  hp?: number;
+  types?: string[];
 }
 
 interface DeckState {
@@ -66,6 +69,9 @@ export const useDeckStore = create<DeckState>((set) => ({
         imageUrl: card.imageUrl,
         rarity: card.rarity,
         subtypes: card.subtypes,
+        suffix: card.suffix,
+        hp: card.hp,
+        types: card.types,
         manual: false,
       };
       return { cards: [...state.cards, newCard] };

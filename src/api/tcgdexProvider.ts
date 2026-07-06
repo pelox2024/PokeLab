@@ -347,7 +347,7 @@ export class TcgdexProvider implements CardProvider {
       displayName: b.name,
       [nameKey]: b.name,
       localId: b.localId,
-      imageUrl: imageUrl(b.image, "high"),
+      imageUrl: imageUrl(b.image, "low"), // vignette grille (rapide) ; détail en "high"
     };
   }
 
@@ -392,7 +392,7 @@ export class TcgdexProvider implements CardProvider {
         displayName,
         searchAliases: aliases.length ? aliases : undefined,
         localId: v.localId,
-        imageUrl: imageUrl(v.image, "high"),
+        imageUrl: imageUrl(v.image, "low"), // vignette grille (rapide) ; détail en "high"
       });
     }
 

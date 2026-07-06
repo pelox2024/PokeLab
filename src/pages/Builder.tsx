@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { Link } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { activeProvider } from "../api/cardApi";
-import type { CardBrief, CardFilters, CardRecord, SortKey } from "../api/types";
+import type { CardBrief, CardFilters, SortKey } from "../api/types";
 import type { DeckFormat } from "../db/schema";
 import { useSets } from "../hooks/useCards";
 import { useCardExplorer } from "../hooks/useCardExplorer";
@@ -35,7 +33,6 @@ const FORMAT_OPTIONS = [
 ];
 
 export function Builder() {
-  const queryClient = useQueryClient();
   const isMobile = useMediaQuery("(max-width: 980px)");
 
   const { deckId, versionId, name, format, cards, load, setName, setFormat, add, enrich, clearCards } =
@@ -129,28 +126,29 @@ export function Builder() {
     };
   }, [deckId, enrich]);
 
-  const addToDeck = async (brief: CardBrief) => {
-    add({ cardId: brief.id, name: brief.name, number: brief.localId, imageUrl: brief.imageUrl });
+  const addToDeck = (brief: CardBrief) => {
+    // Ajout optimiste AVEC les indices déjà connus (index Supabase) : la carte
+    // se place dans le bon groupe (Pokémon/Dresseur/Énergie) immédiatement.
+    add({
+      cardId: brief.id,
+      name: brief.name,
+      number: brief.localId,
+      imageUrl: brief.imageUrl,
+      category: brief.category,
+      subtypes: brief.subtypes,
+      suffix: brief.suffix,
+      hp: brief.hp,
+      types: brief.types,
+    });
     toast(`Ajouté : ${brief.name}`, "success");
-    try {
-      const rec = await queryClient.fetchQuery<CardRecord>({
-        queryKey: ["cards", "detail", brief.providerId],
-        queryFn: () => activeProvider.getCard(brief.providerId),
-        staleTime: 30 * 60 * 1000,
+
+    // Complète en tâche de fond seulement si le brief est incomplet (cartes
+    // TCGdex sans catégorie). Provider-aware : gère « ptcg: » ET « tcgdex: ».
+    const complete = !!brief.category && (brief.category !== "Pokemon" || brief.hp != null);
+    if (!complete) {
+      void fetchEnrichment(brief.id).then((patch) => {
+        if (patch) enrich(brief.id, { ...patch, imageUrl: patch.imageUrl ?? brief.imageUrl });
       });
-      enrich(brief.id, {
-        category: rec.category,
-        setCode: rec.setId,
-        number: rec.number,
-        rarity: rec.rarity,
-        subtypes: rec.subtypes,
-        suffix: rec.suffix,
-        hp: rec.hp,
-        types: rec.types,
-        imageUrl: rec.imageUrl ?? brief.imageUrl,
-      });
-    } catch {
-      /* enrichissement best-effort */
     }
   };
 

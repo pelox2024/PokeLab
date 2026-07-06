@@ -81,6 +81,7 @@ function normalizeSubtypes(subtypes?: string[]): { subtypes: string[]; suffix?: 
 
 function briefFromRow(r: SearchRow): CardBrief {
   const fr = getDisplayLang() === "fr";
+  const { subtypes, suffix } = normalizeSubtypes(r.subtypes ?? undefined);
   return {
     id: `ptcg:${r.id}`,
     provider: "ptcg",
@@ -91,7 +92,15 @@ function briefFromRow(r: SearchRow): CardBrief {
     displayName: fr && r.name_fr ? r.name_fr : r.name,
     searchAliases: r.name_fr ? [r.name_fr] : undefined,
     localId: r.number ?? undefined,
-    imageUrl: r.image_large ?? r.image_small ?? undefined,
+    // Vignette (petite) pour la grille : chargement bien plus rapide ; la modal
+    // détail récupère la haute résolution séparément.
+    imageUrl: r.image_small ?? r.image_large ?? undefined,
+    // Indices déjà connus de l'index : regroupement/stats corrects dès l'ajout.
+    category: ptcgCategory(r.supertype),
+    subtypes,
+    suffix,
+    hp: r.hp ?? undefined,
+    types: r.types ?? undefined,
   };
 }
 

@@ -132,6 +132,13 @@ export interface CardBrief {
   searchAliases?: string[];
   localId?: string;
   imageUrl?: string;
+  // Indices d'enrichissement (quand le provider les fournit déjà, ex. index
+  // Supabase) : permettent un regroupement/stats corrects dès l'ajout au deck.
+  category?: CardCategory;
+  subtypes?: string[];
+  suffix?: string;
+  hp?: number;
+  types?: string[];
 }
 
 export interface CardFilters {
