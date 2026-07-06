@@ -4,6 +4,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../db/db";
 import { downloadBackup, importBackup, wipeAll } from "../db/backup";
 import { getBilingualPref, getLangPref, setBilingualPref, setLangPref } from "../lib/prefs";
+import { usePwaInstall } from "../lib/pwa";
 import type { CardLang } from "../api/types";
 import { toast } from "../store/toastStore";
 import { fr } from "../lib/i18n";
@@ -20,6 +21,7 @@ export function Settings() {
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { canInstall, installed, promptInstall, ios } = usePwaInstall();
 
   const counts = useLiveQuery(
     async () => ({
@@ -211,6 +213,43 @@ export function Settings() {
           </div>
         </div>
       </section>
+
+      {/* Application (PWA) */}
+      {!installed && (
+        <section className={`${styles.section} reveal`}>
+          <div className={styles.sectionHead}>
+            <span className={styles.sectionTitle}>
+              <Icon name="spark" size={16} /> Application
+            </span>
+          </div>
+          <div className={styles.card}>
+            <div className={styles.row}>
+              <div className={styles.rowText}>
+                <span className={styles.rowLabel}>Installer PokéLab</span>
+                <span className={styles.rowSub}>
+                  {ios
+                    ? "Sur iPhone/iPad : appuie sur Partager, puis « Sur l'écran d'accueil »."
+                    : "Ajoute l'app à ton appareil : ouverture plein écran, accès hors-ligne."}
+                </span>
+              </div>
+              {canInstall && (
+                <div className={styles.actions}>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    iconLeft={<Icon name="plus" size={16} />}
+                    onClick={() => {
+                      void promptInstall().then((ok) => ok && toast("Installation lancée", "success"));
+                    }}
+                  >
+                    Installer
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* À propos */}
       <section className={`${styles.section} reveal`}>
