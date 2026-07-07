@@ -71,8 +71,14 @@ create table if not exists public.fr_en_glossary (fr text primary key, en text n
 -- Amorçage : voir migration fr_en_glossary_query_builder (degats->damage,
 -- soigne->heal, banc->bench, talent->ability, pioche->draw, defausse->discard…).
 
+-- Sécurité (RLS). `cards` : lecture publique (index de recherche). Les tables
+-- internes ont RLS activé SANS policy → aucun accès direct depuis le client ;
+-- elles ne sont lues que par les fonctions (SECURITY DEFINER) et écrites par le
+-- service role (edge function). Écritures sur `cards` : service role uniquement.
 alter table public.cards enable row level security;
 alter table public.name_fr_dict enable row level security;
+alter table public.search_vocab enable row level security;
+alter table public.fr_en_glossary enable row level security;
 drop policy if exists cards_public_read on public.cards;
 create policy cards_public_read on public.cards for select to anon, authenticated using (true);
 
@@ -89,11 +95,12 @@ begin
   return n;
 end;
 $$;
-revoke all on function public.refresh_search_vocab() from anon, authenticated;
+revoke execute on function public.refresh_search_vocab() from public, anon, authenticated;
+grant execute on function public.refresh_search_vocab() to service_role;
 
 -- Classe chaque carte par RÔLE (fonction) + MÉCANIQUE (structure). Re-jouable.
 create or replace function public.classify_roles()
-returns void language sql as $$
+returns void language sql set search_path = public as $$
   update public.cards c set roles = (
     select array_remove(array[
       case when t ~ 'draw .*card' then 'draw' end,
@@ -125,6 +132,10 @@ returns void language sql as $$
   where c.id is not null;  -- WHERE requis (garde-fou safe-update du service role)
 $$;
 
+-- Administration (ingestion/cron) : réservée au service role.
+revoke execute on function public.classify_roles() from public, anon, authenticated;
+grant execute on function public.classify_roles() to service_role;
+
 -- ── Rafraîchissement automatique (nouvelles extensions) ────────────────────
 -- La fonction edge `ingest?step=recent` ré-ingère les cartes les plus récentes
 -- (orderBy=-set.releaseDate) puis rejoue vocab + rôles. Un cron hebdomadaire
@@ -142,8 +153,10 @@ $$;
 -- ── Construction de la tsquery « recherche moderne » ───────────────────────
 -- Chaque mot = préfixe (as-you-type, ordre/position libres). Glossaire FR -> EN
 -- et correction de fautes ajoutés en OR (jamais en substitution).
+-- SECURITY DEFINER : lit search_vocab / fr_en_glossary (RLS, sans policy) en tant
+-- que propriétaire. Fonction INTERNE (appelée par search_cards) — pas exposée.
 create or replace function public.build_search_query(q text)
-returns tsquery language plpgsql stable as $$
+returns tsquery language plpgsql stable security definer set search_path = public as $$
 declare
   raw text; tok text; key text; eng text; corrected text; sim real;
   parts text[] := '{}';
@@ -180,7 +193,7 @@ begin
   return to_tsquery('simple', array_to_string(parts, ' & '));
 end;
 $$;
-grant execute on function public.build_search_query to anon, authenticated;
+revoke execute on function public.build_search_query(text) from public, anon, authenticated;
 
 -- ── Recherche des cartes ───────────────────────────────────────────────────
 create or replace function public.search_cards(
@@ -200,7 +213,7 @@ returns table (
   hp int, number text, set_id text, set_name text, set_ptcgo_code text, rarity text,
   image_small text, image_large text, release_date date, total bigint
 )
-language sql stable as $$
+language sql stable security definer set search_path = public as $$
   with q_norm as (select nullif(btrim(q), '') as term),
   pq as (select public.build_search_query((select term from q_norm)) as tsq),
   filtered as (
